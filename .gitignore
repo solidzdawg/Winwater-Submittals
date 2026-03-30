@@ -1,0 +1,23 @@
+# Local document cache (populated by browse-docs.py / agent.py)
+.doc-cache/
+
+# Generated submittal PDFs (large binaries — store on Z: drive)
+submittals/**/*_SUB_*.pdf
+submittals/**/assembly-log.txt
+submittals/**/agent-run.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

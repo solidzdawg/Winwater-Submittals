@@ -1,0 +1,11 @@
+item_number,description,manufacturer,model_number,spec_section,cut_sheet_path,cert_nsf61_path,cert_nsf372_path,other_certs,spec_pages_path,notes
+1,2-inch Pressure Reducing Valve,Watts,LF25AUB-Z3,22 05 23,,,,,,"Confirm inlet/outlet sizes from drawings"
+2,2.5-inch Double Check Valve Assembly,Watts,007M3QT,22 05 23,,,,,,"Confirm with local water authority approval list"
+3,2-inch Bronze Gate Valve,Nibco,T-113,22 05 23,,,,,,
+4,1.5-inch Bronze Gate Valve,Nibco,T-113,22 05 23,,,,,,
+5,0.75-inch Full Port Ball Valve,Apollo,77-100,22 05 23,,,,,,
+6,1.5-inch Y-Strainer,Mueller,351,22 05 23,,,,,,
+7,3-inch Cold Water Meter,Sensus,iPERL,22 05 11,,,,,,
+8,50-Gallon Expansion Tank,Amtrol,ST-30,22 05 23,,,,,,"Verify sizing calc from mechanical engineer"
+9,1.5 HP In-Line Circulating Pump,Grundfos,UP26-96F,23 21 23,,,,,,
+10,100-Gallon Commercial Gas Water Heater,AO Smith,BTH-199A,22 33 00,,,,,,"Confirm BTU input and flue requirements"

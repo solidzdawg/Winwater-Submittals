@@ -1,0 +1,10 @@
+{
+  "submittal_task_dir": "~/Documents/submittal-task",
+  "z_drive_vendor_parts": "Z:\\Vendor Parts",
+  "cache_dir": ".doc-cache",
+  "_notes": {
+    "submittal_task_dir": "Your local Documents folder where project task folders live. Use ~ for home directory.",
+    "z_drive_vendor_parts": "UNC path or drive letter for the company Z: drive vendor parts folder.",
+    "cache_dir": "Local cache directory (relative to repo root, or absolute path). Ignored by git."
+  }
+}
