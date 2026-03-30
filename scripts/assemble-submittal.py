@@ -3,6 +3,7 @@
 Winwater Submittal Assembly Script
 ===================================
 Assembles a complete submittal package PDF from individual section PDFs.
+Adds bookmarks per item for easy navigation in the final PDF.
 
 Usage:
     python assemble-submittal.py --project "Double-RR"
@@ -14,13 +15,14 @@ Requirements:
 
 Directory Structure Expected:
     submittals/<project>/
-        01-cover/          <- cover sheet PDF(s)
-        02-index/          <- item index PDF(s)
-        03-items/          <- subfolders per item (Item-01, Item-02, ...)
-            Item-01/       <- separator + cut sheet + certs + spec pages
+        manifest.csv           <- item manifest (drives assembly order)
+        01-cover/              <- cover sheet PDF(s)
+        02-index/              <- item index PDF(s)
+        03-items/              <- subfolders per item (Item-01, Item-02, ...)
+            Item-01/           <- separator + cut sheet + certs + spec pages
             Item-02/
             ...
-        04-attachments/    <- disclaimer, LEED, etc.
+        04-attachments/        <- disclaimer, LEED, etc.
 """
 
 import argparse
@@ -57,9 +59,19 @@ def collect_item_dirs(items_dir: Path) -> list[Path]:
     )
 
 
+def load_manifest(project_dir: Path) -> list[dict]:
+    """Load manifest.csv and return list of item dicts."""
+    manifest_path = project_dir / "manifest.csv"
+    if not manifest_path.exists():
+        return []
+    with open(manifest_path, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
 def assemble_submittal(project: str, output_name: str | None = None) -> Path:
     """
     Assemble all PDFs in the correct submittal order into a single output PDF.
+    Adds PDF bookmarks for each major section and each item for easy navigation.
 
     Order:
       1. 01-cover/   (cover sheet)
@@ -75,6 +87,18 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
         print(f"ERROR: Project directory not found: {project_dir}")
         sys.exit(1)
 
+    # Load manifest for bookmark labels
+    manifest_items = load_manifest(project_dir)
+    item_labels = {}
+    for row in manifest_items:
+        num = row.get("item_number", "").zfill(2)
+        desc = row.get("description", f"Item {num}")
+        mfr = row.get("manufacturer", "")
+        label = f"Item {num} — {desc}"
+        if mfr:
+            label += f" ({mfr})"
+        item_labels[f"Item-{num}"] = label
+
     sections = [
         project_dir / "01-cover",
         project_dir / "02-index",
@@ -85,12 +109,14 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
     assembly_log = []
 
     # --- Cover and Index ---
-    for section_dir in sections:
+    section_names = ["Cover Sheet", "Item Index"]
+    for section_dir, section_name in zip(sections, section_names):
         pdfs = find_pdfs_in_dir(section_dir)
         if not pdfs:
             print(f"  ⚠️  No PDFs found in {section_dir.name}/ — section skipped")
             assembly_log.append(f"MISSING: {section_dir.name}/")
             continue
+        bookmark_page = total_pages
         for pdf_path in pdfs:
             reader = PdfReader(str(pdf_path))
             page_count = len(reader.pages)
@@ -99,6 +125,8 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
             total_pages += page_count
             print(f"  ✅ Added {pdf_path.name} ({page_count} pages)")
             assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
+        # Add top-level bookmark
+        writer.add_outline_item(section_name, bookmark_page)
 
     # --- Per-item sections ---
     items_dir = project_dir / "03-items"
@@ -107,12 +135,14 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
         print(f"  ⚠️  No item folders found in 03-items/ — items section skipped")
         assembly_log.append("MISSING: 03-items/ (no item subfolders)")
     else:
+        items_parent = writer.add_outline_item("Item Sections", total_pages)
         for item_dir in item_dirs:
             pdfs = find_pdfs_in_dir(item_dir)
             if not pdfs:
                 print(f"  ⚠️  No PDFs in {item_dir.name}/ — item skipped")
                 assembly_log.append(f"MISSING: 03-items/{item_dir.name}/")
                 continue
+            bookmark_page = total_pages
             for pdf_path in pdfs:
                 reader = PdfReader(str(pdf_path))
                 page_count = len(reader.pages)
@@ -121,6 +151,9 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
                 total_pages += page_count
                 print(f"  ✅ Added {item_dir.name}/{pdf_path.name} ({page_count} pages)")
                 assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
+            # Add child bookmark under "Item Sections"
+            label = item_labels.get(item_dir.name, item_dir.name)
+            writer.add_outline_item(label, bookmark_page, parent=items_parent)
 
     # --- Attachments ---
     attachments_dir = project_dir / "04-attachments"
@@ -129,6 +162,7 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
         print(f"  ⚠️  No PDFs found in 04-attachments/ — attachments skipped")
         assembly_log.append("MISSING: 04-attachments/")
     else:
+        bookmark_page = total_pages
         for pdf_path in attachment_pdfs:
             reader = PdfReader(str(pdf_path))
             page_count = len(reader.pages)
@@ -137,6 +171,7 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
             total_pages += page_count
             print(f"  ✅ Added {pdf_path.name} ({page_count} pages)")
             assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
+        writer.add_outline_item("Attachments", bookmark_page)
 
     # --- Write output ---
     if output_name is None:
@@ -213,6 +248,12 @@ def main():
         "--output",
         default=None,
         help="Output PDF filename (default: auto-generated from project name)",
+    )
+    parser.add_argument(
+        "--manifest",
+        default=None,
+        help="Manifest CSV filename (default: manifest.csv in project dir). "
+             "Used for bookmark labels.",
     )
     parser.add_argument(
         "--validate-only",

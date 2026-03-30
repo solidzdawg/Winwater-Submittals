@@ -65,28 +65,20 @@
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   CONTENTS SUMMARY                                                          │
-│   This submittal contains ⚠️ [N] items on ⚠️ [N] pages                     │
-│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚠️ Fields Requiring Completion
+## Fields Requiring Completion
 
 The following fields must be populated before this cover sheet is final:
 
 | Field                | Action Required                                              |
 |----------------------|--------------------------------------------------------------|
 | Project Address      | Obtain from submittal task folder or project documents       |
-| Spec Section(s)      | Extract from project specification PDF                       |
 | Submission Date      | Fill in on day of submission                                 |
 | PM Name / Phone / Email | Fill in with Winwater PM of record                      |
 | GC Name              | Obtain from project documentation                            |
 | EOR Name             | Obtain from project documentation                            |
 | GC Project Number    | Obtain from GC's contract / project info                     |
-| Total Items          | Count after completing the item index                        |
-| Total Pages          | Count after final PDF assembly                               |

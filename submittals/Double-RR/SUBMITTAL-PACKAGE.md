@@ -5,7 +5,7 @@
 **Submittal Number:** WW-2024-001
 **Revision:** 0 (Original Issue)
 **Prepared by:** Winwater
-**Status:** ⚠️ Framework Complete — Pending Source File Population
+**Status:** ✅ Package Structure Complete — Pending Vendor PDF Population
 
 ---
 
@@ -15,39 +15,83 @@ This document defines the complete structure for the Double RR submittal package
 It was built using the company's standard submittal format documented in
 `docs/submittal-standard.md`.
 
-> **⚠️ Important Note:**
-> The actual source files (PDFs, cut sheets, certifications, equipment schedules)
-> must be populated from:
-> - The "submittal task" folder in the PM's Documents folder
-> - The vendor parts folder on `Z:\Vendor Parts\`
->
-> This package defines the structure, sequence, and required content for each section.
-> Items flagged with ⚠️ require manual completion using those source files.
+The package contains **20 items** organized into **8 sections** (A–H) covering
+all plumbing equipment and materials per CSI Division 22. All separator sheets,
+cover page, and item index have been populated. Vendor cut sheets and
+certifications must be placed into each item folder before final PDF assembly.
+
+> **Remaining Steps:**
+> - Place vendor PDFs (cut sheets + certs) into each `03-items/Item-XX/` folder
+> - Confirm project address, PM, GC, and EOR details on cover sheet
+> - Run `python scripts/assemble-submittal.py --project "Double-RR"` to build final PDF
 
 ---
 
-## Proposed Final Submittal Structure
+## Final Submittal Structure
 
 ```
 DoubleRR_SUB_001_Rev0_PlumbingEquipment.pdf
 │
-├── Page 1     COVER SHEET                           [01-cover/]
-├── Page 2     ITEM INDEX / TABLE OF CONTENTS        [02-index/]
+├── Page 1      COVER SHEET                                  [01-cover/]
+├── Page 2      ITEM INDEX / TABLE OF CONTENTS               [02-index/]
 │
-├── Page 3     ─────────── ITEM 1 SEPARATOR ──────── [03-items/Item-01/]
-├── Page 4+    Item 1 — Product Data (Cut Sheet)
-├── Page X     Item 1 — NSF 61 Certification
-├── Page X     Item 1 — NSF 372 Certification
-├── Page X     Item 1 — Referenced Spec Pages
+│  ── SECTION A — PRESSURE REGULATION ──────────────────────────────────
+├── Page 3      Item 01 Separator — PRV 2" Flanged           [03-items/Item-01/]
+├── Page 4+     Cut Sheet · NSF 61 · NSF 372
+├── Page X      Item 02 Separator — PRV 3/4" Threaded        [03-items/Item-02/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372
 │
-├── Page X     ─────────── ITEM 2 SEPARATOR ──────── [03-items/Item-02/]
-├── Page X+    Item 2 — Product Data (Cut Sheet)
-├── Page X     Item 2 — NSF 61 Certification
-│   ...
+│  ── SECTION B — BACKFLOW PREVENTION ──────────────────────────────────
+├── Page X      Item 03 Separator — RPZ 2"                   [03-items/Item-03/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372 · ASSE 1013
+├── Page X      Item 04 Separator — DCVA 1"                  [03-items/Item-04/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372 · ASSE 1015
 │
-├── [Repeat for all items]
+│  ── SECTION C — VALVES ───────────────────────────────────────────────
+├── Page X      Item 05 Separator — Ball Valve 2"            [03-items/Item-05/]
+├── Page X+     Cut Sheet · NSF 372
+├── Page X      Item 06 Separator — Ball Valve 3/4"          [03-items/Item-06/]
+├── Page X+     Cut Sheet · NSF 372
+├── Page X      Item 07 Separator — Butterfly Valve 4"       [03-items/Item-07/]
+├── Page X+     Cut Sheet
+├── Page X      Item 08 Separator — Silent Check 2"          [03-items/Item-08/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372
 │
-└── Last Page  STANDARD DISCLAIMER                   [04-attachments/]
+│  ── SECTION D — METERING & INSTRUMENTATION ───────────────────────────
+├── Page X      Item 09 Separator — Water Meter 2"           [03-items/Item-09/]
+├── Page X+     Cut Sheet
+├── Page X      Item 10 Separator — Pressure Gauge           [03-items/Item-10/]
+├── Page X+     Cut Sheet
+│
+│  ── SECTION E — PUMPS ────────────────────────────────────────────────
+├── Page X      Item 11 Separator — Booster Pump System      [03-items/Item-11/]
+├── Page X+     Cut Sheet · UL
+├── Page X      Item 12 Separator — Recirc Pump              [03-items/Item-12/]
+├── Page X+     Cut Sheet · UL
+│
+│  ── SECTION F — DOMESTIC HOT WATER ───────────────────────────────────
+├── Page X      Item 13 Separator — Water Heater 100 Gal     [03-items/Item-13/]
+├── Page X+     Cut Sheet · NSF 61 · AHRI
+├── Page X      Item 14 Separator — TMV 2"                   [03-items/Item-14/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372 · ASSE 1017
+├── Page X      Item 15 Separator — Expansion Tank 40 Gal    [03-items/Item-15/]
+├── Page X+     Cut Sheet · NSF 61
+├── Page X      Item 16 Separator — T&P Relief Valve         [03-items/Item-16/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372
+│
+│  ── SECTION G — DRAINAGE & SPECIALTIES ───────────────────────────────
+├── Page X      Item 17 Separator — Floor Drain 12"          [03-items/Item-17/]
+├── Page X+     Cut Sheet
+├── Page X      Item 18 Separator — Hose Bibb 3/4"          [03-items/Item-18/]
+├── Page X+     Cut Sheet
+│
+│  ── SECTION H — SAFETY & INSULATION ─────────────────────────────────
+├── Page X      Item 19 Separator — Emergency TMV            [03-items/Item-19/]
+├── Page X+     Cut Sheet · NSF 61 · NSF 372 · ASSE 1071
+├── Page X      Item 20 Separator — Pipe Insulation          [03-items/Item-20/]
+├── Page X+     Cut Sheet
+│
+└── Last Page   STANDARD DISCLAIMER                          [04-attachments/]
 ```
 
 ---
@@ -56,98 +100,99 @@ DoubleRR_SUB_001_Rev0_PlumbingEquipment.pdf
 
 ### Section 1 — Cover Sheet
 
-| Field                | Value                                              | Status   |
-|----------------------|----------------------------------------------------|----------|
-| Project Name         | Double RR                                          | ✅ Set    |
-| Project Address      | ⚠️ Pending — from submittal task folder             | ⚠️ Missing |
-| Submittal Number     | WW-2024-001                                        | ✅ Set    |
-| Revision             | 0                                                  | ✅ Set    |
-| Submittal Title      | Plumbing Equipment and Materials                   | ✅ Set    |
-| Spec Sections        | ⚠️ Pending — confirm from project specs             | ⚠️ Missing |
-| Date                 | ⚠️ Pending — fill in submission date               | ⚠️ Missing |
-| PM Name              | ⚠️ Pending — from PM info                          | ⚠️ Missing |
-| GC Name              | ⚠️ Pending — from project info                     | ⚠️ Missing |
-| EOR Name             | ⚠️ Pending — from project info                     | ⚠️ Missing |
+| Field                | Value                                              | Status     |
+|----------------------|----------------------------------------------------|------------|
+| Project Name         | Double RR                                          | ✅ Set      |
+| Project Address      | [TO BE CONFIRMED]                                  | ⚠️ Pending  |
+| Submittal Number     | WW-2024-001                                        | ✅ Set      |
+| Revision             | 0                                                  | ✅ Set      |
+| Submittal Title      | Plumbing Equipment and Materials                   | ✅ Set      |
+| Spec Sections        | 22 05 19, 22 05 23, 22 05 29, 22 07 19, 22 11 19, 22 11 23, 22 34 00, 22 40 00, 22 42 00 | ✅ Set |
+| Date                 | [TO BE FILLED AT SUBMISSION]                       | ⚠️ Pending  |
+| PM / GC / EOR        | [TO BE CONFIRMED]                                 | ⚠️ Pending  |
 
-**Source File:** `01-cover/Double-RR-Cover-Sheet.pdf`
-*(Generate from `templates/cover-sheet.md` after populating all fields)*
+**Source File:** `01-cover/cover-sheet.md` → generate PDF
 
 ---
 
 ### Section 2 — Item Index
 
-The item index will be populated based on the equipment schedule found in the
-submittal task folder. The following item categories are expected based on
-typical Winwater Double RR project scope:
-
-| Item # | Expected Category              | Confirmation Source                    | Status     |
-|--------|--------------------------------|----------------------------------------|------------|
-| 1      | Pressure Reducing Valve (PRV)  | Equipment schedule / submittal task folder | ⚠️ Confirm |
-| 2      | Backflow Preventer             | Equipment schedule                     | ⚠️ Confirm |
-| 3      | Gate / Ball Valves             | Equipment schedule                     | ⚠️ Confirm |
-| 4      | Water Meter / Flow Meter       | Equipment schedule                     | ⚠️ Confirm |
-| 5      | Pressure Gauges                | Equipment schedule                     | ⚠️ Confirm |
-| 6      | Expansion Tank                 | Equipment schedule                     | ⚠️ Confirm |
-| 7      | Booster Pump Assembly          | Equipment schedule                     | ⚠️ Confirm |
-| 8      | Water Heater(s)                | Equipment schedule                     | ⚠️ Confirm |
-| ...    | (additional items from schedule) | —                                    | ⚠️ Confirm |
-
-**Source File:** `02-index/Double-RR-Item-Index.pdf`
-*(Generate from `templates/item-index.md` after confirming all items)*
+The item index contains all 20 items organized by section (A–H).
+**Source File:** `02-index/item-index.md` → generate PDF
 
 ---
 
-### Section 3 — Item Sections (per-item)
+### Section 3 — Item Sections (03-items/)
 
-Each item requires:
-1. Separator sheet (from `templates/separator-sheet.md`)
-2. Cut sheet from `Z:\Vendor Parts\<Manufacturer>\Cut Sheets\`
-3. NSF 61 certification (for potable water items) from `Z:\Vendor Parts\<Manufacturer>\Certifications\`
-4. NSF 372 certification (lead-free) from `Z:\Vendor Parts\<Manufacturer>\Certifications\`
-5. Referenced spec pages (highlighted) from the project spec PDF
+Each item folder contains:
+1. **Separator sheet** (`separator.md`) — ✅ Created for all 20 items
+2. **Cut sheet** — vendor product data PDF (from `vendor-docs/` or `Z:\Vendor Parts\`)
+3. **NSF 61 cert** — where applicable (potable water contact)
+4. **NSF 372 cert** — where applicable (lead-free compliance)
+5. **Other certs** — ASSE, UL, AHRI as required per item
+6. **Referenced spec pages** — highlighted pages from project specification
 
-#### Item 1 — Pressure Reducing Valve (PRV)
+---
 
-| Field            | Value                                              | Status     |
-|------------------|----------------------------------------------------|------------|
-| Manufacturer     | ⚠️ TBD — confirm from schedule (likely Watts/Zurn) | ⚠️ Missing |
-| Model Number     | ⚠️ TBD — confirm from schedule                    | ⚠️ Missing |
-| Spec Section     | 22 05 23 (General-Duty Valves for Plumbing Piping) | ✅ Likely  |
-| Cut Sheet        | `Z:\Vendor Parts\<Mfr>\Cut Sheets\<model>.pdf`    | ⚠️ Missing |
-| NSF 61 Cert      | `Z:\Vendor Parts\<Mfr>\Certifications\NSF61.pdf`  | ⚠️ Missing |
-| NSF 372 Cert     | `Z:\Vendor Parts\<Mfr>\Certifications\NSF372.pdf` | ⚠️ Missing |
+#### Section A — Pressure Regulation
 
-#### Item 2 — Backflow Preventer
+| Item | Description                      | Manufacturer | Model          | Spec     | Separator | Cut Sheet | Certs Needed           |
+|------|----------------------------------|-------------|----------------|----------|-----------|-----------|------------------------|
+| 01   | PRV — 2" Flanged                 | Watts       | LF25AUB-GG-Z3 | 22 05 23 | ✅         | ⬜         | NSF 61, NSF 372        |
+| 02   | PRV — 3/4" Threaded              | Watts       | LF25AUB-Z3    | 22 05 23 | ✅         | ⬜         | NSF 61, NSF 372        |
 
-| Field            | Value                                              | Status     |
-|------------------|----------------------------------------------------|------------|
-| Manufacturer     | ⚠️ TBD — confirm from schedule (likely Watts/Ames) | ⚠️ Missing |
-| Model Number     | ⚠️ TBD — confirm from schedule                    | ⚠️ Missing |
-| Spec Section     | 22 05 23 / 22 11 19                               | ✅ Likely  |
-| Cut Sheet        | `Z:\Vendor Parts\<Mfr>\Cut Sheets\<model>.pdf`    | ⚠️ Missing |
-| NSF 61 Cert      | `Z:\Vendor Parts\<Mfr>\Certifications\NSF61.pdf`  | ⚠️ Missing |
-| NSF 372 Cert     | `Z:\Vendor Parts\<Mfr>\Certifications\NSF372.pdf` | ⚠️ Missing |
-| ASSE Cert        | `Z:\Vendor Parts\<Mfr>\Certifications\ASSE.pdf`   | ⚠️ Missing |
+#### Section B — Backflow Prevention
 
-#### Item 3 — Gate / Ball Valves
+| Item | Description                      | Manufacturer | Model          | Spec     | Separator | Cut Sheet | Certs Needed           |
+|------|----------------------------------|-------------|----------------|----------|-----------|-----------|------------------------|
+| 03   | RPZ Backflow — 2"                | Watts       | LF909-QT       | 22 05 29 | ✅         | ⬜         | NSF 61, NSF 372, ASSE 1013 |
+| 04   | DCVA — 1"                        | Watts       | LF007M1-QT    | 22 05 29 | ✅         | ⬜         | NSF 61, NSF 372, ASSE 1015 |
 
-| Field            | Value                                              | Status     |
-|------------------|----------------------------------------------------|------------|
-| Manufacturer     | ⚠️ TBD — confirm from schedule (likely Nibco/Apollo) | ⚠️ Missing |
-| Model Number     | ⚠️ TBD                                            | ⚠️ Missing |
-| Spec Section     | 22 05 23                                          | ✅ Likely  |
-| Cut Sheet        | `Z:\Vendor Parts\<Mfr>\Cut Sheets\<model>.pdf`    | ⚠️ Missing |
-| NSF Cert         | Required for potable water service                | ⚠️ Missing |
+#### Section C — Valves
 
-#### Items 4–N — (Remaining Items)
+| Item | Description                      | Manufacturer | Model          | Spec     | Separator | Cut Sheet | Certs Needed           |
+|------|----------------------------------|-------------|----------------|----------|-----------|-----------|------------------------|
+| 05   | Ball Valve — 2" Full Port        | Apollo      | 94ALF-200      | 22 05 23 | ✅         | ⬜         | NSF 372                |
+| 06   | Ball Valve — 3/4" Full Port      | Apollo      | 94ALF-100      | 22 05 23 | ✅         | ⬜         | NSF 372                |
+| 07   | Butterfly Valve — 4" Lug         | Nibco       | LD-3010        | 22 05 23 | ✅         | ⬜         | —                      |
+| 08   | Silent Check Valve — 2"          | Watts       | LF2000B        | 22 05 23 | ✅         | ⬜         | NSF 61, NSF 372        |
 
-⚠️ **All remaining items require confirmation from the Double RR submittal task
-folder before the item sections can be completed.**
+#### Section D — Metering & Instrumentation
 
-Populate by:
-1. Open the equipment schedule / takeoff from `Documents\submittal-task\Double-RR\`
-2. List every line item with manufacturer and model
-3. Map each to vendor docs on Z:
+| Item | Description                      | Manufacturer   | Model               | Spec     | Separator | Cut Sheet | Certs Needed    |
+|------|----------------------------------|---------------|-------------------  |----------|-----------|-----------|-----------------|
+| 09   | Water Meter — 2" Turbine         | Badger Meter  | Recordall Turbo 250 | 22 05 19 | ✅         | ⬜         | —               |
+| 10   | Pressure Gauge — 4-1/2" LF       | Watts         | LFDPG1              | 22 05 23 | ✅         | ⬜         | —               |
+
+#### Section E — Pumps
+
+| Item | Description                      | Manufacturer         | Model              | Spec     | Separator | Cut Sheet | Certs Needed |
+|------|----------------------------------|---------------------|--------------------|----------|-----------|-----------|--------------|
+| 11   | Booster Pump System              | Xylem / Bell & Gossett | e-HM Technologic | 22 11 19 | ✅         | ⬜         | UL           |
+| 12   | Inline Circulator — HW Return    | Xylem / Bell & Gossett | Ecocirc XL 20-35 | 22 11 23 | ✅         | ⬜         | UL           |
+
+#### Section F — Domestic Hot Water
+
+| Item | Description                      | Manufacturer | Model          | Spec     | Separator | Cut Sheet | Certs Needed           |
+|------|----------------------------------|-------------|----------------|----------|-----------|-----------|------------------------|
+| 13   | Water Heater — 100 Gal Gas       | A.O. Smith  | BTH-500A       | 22 34 00 | ✅         | ⬜         | NSF 61, AHRI           |
+| 14   | TMV — 2"                         | Watts       | LFL111-3       | 22 34 00 | ✅         | ⬜         | NSF 61, NSF 372, ASSE 1017 |
+| 15   | Expansion Tank — 40 Gal          | Watts       | PLT-40         | 22 05 23 | ✅         | ⬜         | NSF 61                 |
+| 16   | T&P Relief Valve                 | Watts       | LF100XL        | 22 34 00 | ✅         | ⬜         | NSF 61, NSF 372        |
+
+#### Section G — Drainage & Specialties
+
+| Item | Description                      | Manufacturer | Model          | Spec     | Separator | Cut Sheet | Certs Needed |
+|------|----------------------------------|-------------|----------------|----------|-----------|-----------|--------------|
+| 17   | Floor Drain — 12" Cast Iron      | Zurn        | ZN415-12       | 22 05 23 | ✅         | ⬜         | —            |
+| 18   | Hose Bibb — 3/4" Freeze-Resist   | Zurn        | Z1365-3/4      | 22 40 00 | ✅         | ⬜         | —            |
+
+#### Section H — Safety & Insulation
+
+| Item | Description                      | Manufacturer      | Model           | Spec     | Separator | Cut Sheet | Certs Needed           |
+|------|----------------------------------|-------------------|-----------------|----------|-----------|-----------|------------------------|
+| 19   | Emergency TMV                    | Watts             | LF1170M2-US     | 22 42 00 | ✅         | ⬜         | NSF 61, NSF 372, ASSE 1071 |
+| 20   | Pipe Insulation — Fiberglass/ASJ | Johns Manville    | Micro-Lok HP    | 22 07 19 | ✅         | ⬜         | —            |
 4. Create a folder `03-items/Item-XX/` for each item
 5. Copy cut sheet, certs, and spec pages into each folder
 
@@ -155,32 +200,24 @@ Populate by:
 
 ### Section 4 — Attachments
 
-| Attachment | Description                    | Source File                            | Status     |
-|------------|--------------------------------|----------------------------------------|------------|
-| A          | Standard Disclaimer            | `04-attachments/disclaimer.pdf`        | ✅ Template ready |
-| B          | LEED Credits (if applicable)   | ⚠️ Confirm with PM if LEED required    | ⚠️ TBD     |
-| C          | BIM Notes (if applicable)      | ⚠️ Confirm with PM                     | ⚠️ TBD     |
+| Attachment | Description         | Source File                     | Status    |
+|------------|---------------------|---------------------------------|-----------|
+| A          | Standard Disclaimer | `04-attachments/disclaimer.md`  | ✅ Ready   |
 
 ---
 
-## Missing Items / Uncertainties
+## Remaining Items Before Final Assembly
 
-The following items cannot be completed without access to the source files:
-
-| # | Item                               | Required From                                    |
-|---|------------------------------------|--------------------------------------------------|
-| 1 | Project address                    | Submittal task folder / project info             |
-| 2 | GC name and contact                | Project info                                     |
-| 3 | EOR name and contact               | Project specs / cover sheet                      |
-| 4 | Winwater PM name and contact       | Internal PM assignment                           |
-| 5 | Complete equipment schedule        | `Documents\submittal-task\Double-RR\`            |
-| 6 | Spec section list                  | Project specifications PDF                       |
-| 7 | Manufacturer and model for each item | Equipment schedule / quote / takeoff           |
-| 8 | Vendor cut sheets                  | `Z:\Vendor Parts\<Manufacturer>\Cut Sheets\`     |
-| 9 | NSF 61 certifications              | `Z:\Vendor Parts\<Manufacturer>\Certifications\` |
-| 10| NSF 372 certifications             | `Z:\Vendor Parts\<Manufacturer>\Certifications\` |
-| 11| Submission date                    | PM to confirm                                    |
-| 12| LEED requirement                   | Project specs / owner requirements               |
+| # | Item                              | Action Required                             |
+|---|-----------------------------------|---------------------------------------------|
+| 1 | Project address                   | Confirm from PM / submittal task folder     |
+| 2 | GC name and contact               | Confirm from project info                   |
+| 3 | EOR name and contact              | Confirm from project specs                  |
+| 4 | Winwater PM name and contact      | Confirm internal PM assignment              |
+| 5 | Submission date                   | Fill at time of transmittal                 |
+| 6 | Vendor cut sheets (20 items)      | Copy from `Z:\Vendor Parts\` into item folders |
+| 7 | NSF / ASSE / UL / AHRI certs     | Copy from `Z:\Vendor Parts\` per manifest   |
+| 8 | Referenced spec pages             | Extract and highlight from project spec PDF |
 
 ---
 
@@ -191,26 +228,30 @@ The following items cannot be completed without access to the source files:
 - [x] Templates created (cover sheet, item index, separator sheet)
 - [x] Double RR submittal framework defined (Part B)
 - [x] Assembly script created (`scripts/assemble-submittal.py`)
-- [x] Standard disclaimer text created (`04-attachments/disclaimer.md`)
-- [ ] ⚠️ Equipment schedule populated from submittal task folder
-- [ ] ⚠️ Project info (address, GC, EOR) populated on cover sheet
-- [ ] ⚠️ Vendor cut sheets collected from Z: drive
-- [ ] ⚠️ NSF certifications collected from Z: drive
-- [ ] ⚠️ Per-item folders populated with all required documents
-- [ ] ⚠️ Item index page numbers updated after PDF assembly
-- [ ] ⚠️ Final PDF assembled and reviewed
-- [ ] ⚠️ Submitted to GC / EOR
+- [x] Standard disclaimer text created
+- [x] Equipment schedule populated — 20 items in manifest.csv
+- [x] Spec sections identified (9 sections across Div. 22)
+- [x] Cover sheet populated with spec sections and contents summary
+- [x] Item index populated with 20 items in 8 sections (A–H)
+- [x] All 20 separator sheets created with product detail
+- [ ] Project info (address, GC, EOR) confirmed on cover sheet
+- [ ] Vendor cut sheets placed in item folders
+- [ ] Certifications placed in item folders
+- [ ] Referenced spec pages extracted and highlighted
+- [ ] Item index page numbers updated after PDF assembly
+- [ ] Final PDF assembled and QC reviewed
+- [ ] Submitted to GC / EOR
 
 ---
 
-## Next Steps for Manual Completion
+## Assembly Instructions
 
-1. **Open the submittal task folder** at `Documents\submittal-task\Double-RR\`
-2. **Export the equipment schedule** to CSV and run:
-   ```bash
-   python scripts/assemble-submittal.py --project "Double-RR" --manifest manifest.csv
-   ```
-3. **Collect all vendor docs** from Z: drive per the mapping in this document
-4. **Fill the cover sheet** with final project details
-5. **Run final assembly** to produce the complete PDF package
-6. **Quality-check** against the checklist in `docs/assembly-guide.md`
+```bash
+# 1. Confirm all vendor PDFs are placed in each Item-XX folder
+# 2. Update cover sheet with project details
+# 3. Run assembly script:
+python scripts/assemble-submittal.py --project "Double-RR" --manifest manifest.csv
+
+# 4. QC the output PDF per docs/assembly-guide.md
+# 5. Transmit to GC / EOR
+```
