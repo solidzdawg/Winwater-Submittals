@@ -2,8 +2,8 @@
 
 This repository manages professional submittal packages for Winwater projects.
 It stores submittal templates, company standards documentation, and assembled
-submittal packages organized by project — with an autonomous agent pipeline
-for building, validating, and quality-checking submittals.
+submittal packages organized by project — with an automated pipeline for
+building individual submittal sets from real Office templates.
 
 ---
 
@@ -14,21 +14,32 @@ Winwater-Submittals/
 ├── docs/                          # Company standards and reference documents
 │   ├── submittal-standard.md      # Company submittal format standard (Part A)
 │   └── assembly-guide.md          # Step-by-step assembly instructions
-├── templates/                     # Reusable template files
-│   ├── cover-sheet.md             # Cover sheet template
-│   ├── item-index.md              # Item index / table of contents template
-│   └── separator-sheet.md         # Section separator sheet template
-├── submittals/                    # Completed submittal packages by project
-│   └── Double-RR/                 # Double RR project submittal (20 items, 8 sections)
-│       ├── SUBMITTAL-PACKAGE.md   # Full package definition and status
+├── templates/                     # Office templates used for PDF generation
+│   ├── submittal cover.xlsx       # Excel cover-sheet template
+│   ├── Item Index Template.docx   # Word item index template
+│   ├── Seperator Sheet Template.docx  # Word separator-sheet template
+│   ├── cover-sheet.md             # Markdown cover sheet reference
+│   ├── item-index.md              # Markdown item index reference
+│   └── separator-sheet.md        # Markdown separator reference
+├── submittals/                    # Submittal packages by project
+│   └── Double-RR/                 # Double RR project (20 items, 11 sets)
+│       ├── project.json           # ← Project metadata & set definitions
 │       ├── manifest.csv           # Item manifest (drives all automation)
-│       ├── 01-cover/              # Cover sheet
-│       ├── 02-index/              # Item index / table of contents
+│       ├── SUBMITTAL-PACKAGE.md   # Full package definition and status
+│       ├── sets/                  # 11 built submittal-set PDFs
+│       ├── 01-cover/              # Cover sheet assets
+│       ├── 02-index/              # Item index assets
 │       ├── 03-items/              # Per-item folders (Item-01 through Item-20)
 │       └── 04-attachments/        # Disclaimer
 ├── vendor-docs/                   # Vendor product data organized by manufacturer
+│   ├── Watts/
+│   ├── Apollo/
+│   ├── Zurn/
+│   └── ...
 └── scripts/                       # Assembly and automation scripts
-    ├── assemble-submittal.py      # PDF assembly with bookmarks
+    ├── build-submittal-sets.py    # ← Primary: builds 11 per-set PDFs from templates
+    ├── build-package.py           # Builds a single combined package PDF (WeasyPrint)
+    ├── assemble-submittal.py      # PDF assembly with bookmarks (legacy)
     ├── orchestrator.py            # Autonomous pipeline orchestrator
     └── agents/                    # Specialized agent modules
         ├── validate_agent.py      # Structure & manifest validation
@@ -39,63 +50,83 @@ Winwater-Submittals/
 
 ---
 
-## Quick Start
-
-### Full Autonomous Run (Recommended)
-
-Run the orchestrator to validate, generate separators, audit vendor files,
-QC check, and assemble — all in one command:
+## Installation
 
 ```bash
-python scripts/orchestrator.py --project "Double-RR"
-```
+# Python dependencies
+pip install -r requirements.txt
 
-### Run Individual Steps
-
-```bash
-# Validate project structure
-python scripts/orchestrator.py --project "Double-RR" --step validate
-
-# Generate separator sheets from manifest.csv
-python scripts/orchestrator.py --project "Double-RR" --step separators
-
-# Audit which vendor PDFs are missing
-python scripts/orchestrator.py --project "Double-RR" --step vendor-audit
-
-# Run QC checks
-python scripts/orchestrator.py --project "Double-RR" --step qc
-
-# Assemble final PDF
-python scripts/orchestrator.py --project "Double-RR" --step assemble
-```
-
-### Manual Assembly Only
-
-```bash
-python scripts/assemble-submittal.py --project "Double-RR"
+# System dependency (Ubuntu / Debian / GitHub Actions)
+sudo apt-get install libreoffice
 ```
 
 ---
 
-## Agent Pipeline
+## Quick Start
 
-The orchestrator chains four specialized agents:
+### Build All Submittal Sets (Recommended)
 
-| Step | Agent              | What it does                                                  |
-|------|--------------------|---------------------------------------------------------------|
-| 1    | Validate Agent     | Checks directories, manifest fields, separator existence      |
-| 2    | Separator Agent    | Generates separator.md for each item from manifest + template |
-| 3    | Vendor Fetch Agent | Audits vendor-docs/ for missing cut sheets and certs          |
-| 4    | QC Agent           | Scores completeness: cover, index, naming, CSI format, etc.   |
-| 5    | Assembly           | Merges all PDFs with bookmarks into the final submittal       |
+Generates 11 individual PDFs — one per submittal set — using the real Office
+templates (`submittal cover.xlsx`, `Item Index Template.docx`,
+`Seperator Sheet Template.docx`) plus the vendor cut-sheet PDFs:
 
-### Adding a New Project
+```bash
+python scripts/build-submittal-sets.py --project "Double-RR"
+```
 
-1. Create `submittals/<ProjectName>/` with the standard directory structure
-2. Populate `manifest.csv` with your item list
-3. Run `python scripts/orchestrator.py --project "<ProjectName>"`
-4. Place vendor PDFs in the item folders flagged by the vendor audit
-5. Re-run to assemble the final PDF
+Outputs go to `submittals/Double-RR/sets/`.
+
+### Build Combined Package PDF
+
+Generates a single bookmarked PDF with cover → index → sections:
+
+```bash
+python scripts/build-package.py --project "Double-RR"
+```
+
+### Inspect Templates
+
+Print the structure of all Office templates (no PDFs built):
+
+```bash
+python scripts/build-submittal-sets.py --project "Double-RR" --inspect
+```
+
+### CI / GitHub Actions
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| Build Submittal Sets | push to main (or manual) | Runs `build-submittal-sets.py`, commits 11 set PDFs |
+| Build Submittal Package | manual dispatch | Runs `build-package.py`, commits combined PDF |
+| Sync Vendor Docs | manual dispatch | Pulls vendor PDFs from `solidzdawg/Winwater-Docs` |
+
+---
+
+## Project Configuration (`project.json`)
+
+Each project folder contains a `project.json` file that holds all metadata
+and set definitions.  `build-submittal-sets.py` reads this file automatically;
+if it is missing the script falls back to built-in defaults.
+
+```jsonc
+// submittals/Double-RR/project.json
+{
+  "project_name": "Double RR Ranch - East Cabins",
+  "project_number": "DRLR-2026-001",
+  "submittal_prefix": "WW",
+  "revision": "0",
+  "date": "03/31/2026",
+  "to_name": "",
+  "submitted_by": "Grand Junction Winwater Company",
+  "submittal_sets": [
+    {"id": "01", "name": "Pressure Reducing Valves", "items": [1, 2], "spec": "22 05 23"},
+    ...
+  ]
+}
+```
+
+To update a project date, customer name, or add/remove sets, edit `project.json`
+and re-run the build — no code changes needed.
 
 ---
 
@@ -115,13 +146,16 @@ vendor-docs/
 
 File naming: `<MANUFACTURER>_<ModelNumber>_<DocType>.pdf`
 
+Or sync from the `solidzdawg/Winwater-Docs` repository via the
+**Sync Vendor Docs** workflow (requires `DOCS_TOKEN` secret).
+
 ---
 
 ## Projects
 
-| Project    | Status                      | Submittal # | Items | Sections |
-|------------|-----------------------------|-------------|-------|----------|
-| Double RR  | Structure Complete — Needs PDFs | WW-2024-001 | 20    | 8 (A–H)  |
+| Project    | Status                      | Submittal # | Items | Sets |
+|------------|-----------------------------|-------------|-------|------|
+| Double RR  | ✅ 11 Submittal Sets Built   | WW-2024-001 | 20    | 11   |
 
 ---
 

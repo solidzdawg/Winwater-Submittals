@@ -2,12 +2,16 @@
 """
 build-submittal-sets.py
 =======================
-Generates 11 individual submittal-set PDFs for a project.
+Generates individual submittal-set PDFs for a project.
 
 Each set contains:
   1. Cover page      (from submittal cover.xlsx via openpyxl + LibreOffice)
   2. Item index page  (from Item Index Template.docx via python-docx + LibreOffice)
   3. Per-item:  separator page (Seperator Sheet Template.docx) + vendor cut-sheet PDF
+
+Project metadata and set definitions are loaded from
+  submittals/<project>/project.json
+with hardcoded defaults as fallback.
 
 Usage:
     python build-submittal-sets.py --project Double-RR
@@ -15,11 +19,12 @@ Usage:
 
 Requirements:
     System:  libreoffice
-    Python:  pip install pypdf openpyxl python-docx
+    Python:  pip install -r requirements.txt
 """
 
 import argparse
 import csv
+import json
 import os
 import shutil
 import subprocess
@@ -42,6 +47,8 @@ try:
     from docx import Document
     from docx.shared import Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
 except ImportError:
     sys.exit("ERROR: python-docx not installed.  pip install python-docx")
 
@@ -52,9 +59,10 @@ SUBMITTALS_DIR = BASE_DIR / "submittals"
 DIVIDER = "-" * 60
 
 # ---------------------------------------------------------------------------
-# Project info
+# Default project info and set definitions (overridden by project.json)
 # ---------------------------------------------------------------------------
-PROJECT_INFO = {
+
+DEFAULT_PROJECT_INFO = {
     "project_name": "Double RR Ranch - East Cabins",
     "project_number": "DRLR-2026-001",
     "submittal_prefix": "WW",
@@ -66,22 +74,33 @@ PROJECT_INFO = {
     "submitted_by": "Grand Junction Winwater Company",
 }
 
-# ---------------------------------------------------------------------------
-# 11 submittal sets
-# ---------------------------------------------------------------------------
-SUBMITTAL_SETS = [
+DEFAULT_SUBMITTAL_SETS = [
     {"id": "01", "name": "Pressure Reducing Valves",  "items": [1, 2],           "spec": "22 05 23"},
     {"id": "02", "name": "Backflow Prevention",       "items": [3, 4],           "spec": "22 05 29"},
     {"id": "03", "name": "Ball Valves",               "items": [5, 6],           "spec": "22 05 23"},
-    {"id": "04", "name": "Butterfly Valve",            "items": [7],              "spec": "22 05 23"},
-    {"id": "05", "name": "Check Valve",                "items": [8],              "spec": "22 05 23"},
-    {"id": "06", "name": "Water Meter",                "items": [9],              "spec": "22 05 19"},
-    {"id": "07", "name": "Pressure Gauge",             "items": [10],             "spec": "22 05 23"},
-    {"id": "08", "name": "Pumps",                      "items": [11, 12],         "spec": "22 11 19"},
-    {"id": "09", "name": "Domestic Hot Water",         "items": [13, 14, 15, 16], "spec": "22 34 00"},
-    {"id": "10", "name": "Drainage and Specialties",   "items": [17, 18],         "spec": "22 40 00"},
-    {"id": "11", "name": "Safety and Insulation",      "items": [19, 20],         "spec": "22 42 00"},
+    {"id": "04", "name": "Butterfly Valve",           "items": [7],              "spec": "22 05 23"},
+    {"id": "05", "name": "Check Valve",               "items": [8],              "spec": "22 05 23"},
+    {"id": "06", "name": "Water Meter",               "items": [9],              "spec": "22 05 19"},
+    {"id": "07", "name": "Pressure Gauge",            "items": [10],             "spec": "22 05 23"},
+    {"id": "08", "name": "Pumps",                     "items": [11, 12],         "spec": "22 11 19"},
+    {"id": "09", "name": "Domestic Hot Water",        "items": [13, 14, 15, 16], "spec": "22 34 00"},
+    {"id": "10", "name": "Drainage and Specialties",  "items": [17, 18],         "spec": "22 40 00"},
+    {"id": "11", "name": "Safety and Insulation",     "items": [19, 20],         "spec": "22 42 00"},
 ]
+
+
+def load_project_config(project_dir: Path) -> tuple:
+    """Load project metadata from project.json; fall back to built-in defaults."""
+    config_path = project_dir / "project.json"
+    if config_path.exists():
+        with open(config_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+        project_info = {k: v for k, v in cfg.items() if k != "submittal_sets"}
+        submittal_sets = cfg.get("submittal_sets", DEFAULT_SUBMITTAL_SETS)
+        print("  Config loaded from project.json")
+        return project_info, submittal_sets
+    print("  NOTE: project.json not found — using built-in defaults")
+    return DEFAULT_PROJECT_INFO.copy(), DEFAULT_SUBMITTAL_SETS
 
 
 def load_manifest(project_dir):
@@ -110,13 +129,13 @@ LO_BIN = None
 
 
 def lo_convert(input_path, output_dir):
-    """Convert Office file to PDF via LibreOffice headless."""
+    """Convert an Office file to PDF via LibreOffice headless."""
     global LO_BIN
     if LO_BIN is None:
         LO_BIN = find_libreoffice()
         print("  LO binary: " + LO_BIN)
 
-    # Create a unique user profile to avoid lock conflicts
+    # Unique user profile per file avoids lock conflicts when called in loops
     profile_dir = os.path.join(str(output_dir), "lo_profile_" + input_path.stem)
     os.makedirs(profile_dir, exist_ok=True)
 
@@ -151,7 +170,7 @@ def lo_convert(input_path, output_dir):
         print("  LO output: " + str(pdf_path) + " (" + str(pdf_path.stat().st_size) + " bytes)")
         return pdf_path
 
-    # Search for any PDF that was created
+    # Fall back to most-recently-modified PDF that matches the stem
     candidates = sorted(output_dir.glob("*.pdf"), key=lambda p: p.stat().st_mtime, reverse=True)
     for c in candidates:
         if input_path.stem.lower() in c.stem.lower():
@@ -204,6 +223,7 @@ def set_cell_if_empty(target, value):
 
 
 def fill_cover(template_path, output_path, set_info, project_info):
+    """Fill the Excel cover-sheet template with project and set metadata."""
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
@@ -218,10 +238,11 @@ def fill_cover(template_path, output_path, set_info, project_info):
             val = str(cell.value or "").strip()
             up = val.upper()
 
-            if cell.column + 1 <= max_col:
-                right = ws.cell(row=cell.row, column=cell.column + 1)
-            else:
-                right = None
+            right = (
+                ws.cell(row=cell.row, column=cell.column + 1)
+                if cell.column + 1 <= max_col
+                else None
+            )
 
             if right is not None:
                 if "SUBMITTAL" in up and ("#" in up or "NO" in up or "NUM" in up):
@@ -262,36 +283,72 @@ def fill_cover(template_path, output_path, set_info, project_info):
 
 
 def fill_separator(template_path, output_path, label_text):
+    """
+    Fill the separator-sheet DOCX template.
+
+    Preserves the run formatting (bold, font size, font name) of the first
+    non-empty paragraph and handles multi-line labels (description + manufacturer
+    + model) by inserting proper XML <w:br/> line-break elements between lines.
+    """
     doc = Document(template_path)
+    lines = [ln for ln in label_text.split("\n") if ln.strip()]
+
     replaced = False
     for para in doc.paragraphs:
-        txt = para.text.strip()
-        if not txt:
+        if not (para.text.strip() or para.runs):
             continue
+
         if para.runs:
-            para.runs[0].text = label_text
-            for run in para.runs[1:]:
+            first_run = para.runs[0]
+            bold = first_run.bold
+            font_size = first_run.font.size
+            font_name = first_run.font.name
+
+            # Clear all existing runs
+            for run in para.runs:
                 run.text = ""
+
+            # Write first line into the existing run (preserves highlight/shading)
+            para.runs[0].text = lines[0] if lines else ""
+
+            # Append XML line breaks + new styled runs for subsequent lines
+            for line in lines[1:]:
+                br = OxmlElement("w:br")
+                para.runs[0]._element.append(br)
+                new_run = para.add_run(line)
+                new_run.bold = bold
+                if font_size:
+                    new_run.font.size = font_size
+                if font_name:
+                    new_run.font.name = font_name
         else:
             para.text = label_text
+
         replaced = True
         break
+
     if not replaced:
-        p = doc.add_paragraph(label_text)
+        p = doc.add_paragraph(lines[0] if lines else label_text)
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
     doc.save(output_path)
     return output_path
 
 
-def fill_index(template_path, output_path, set_info, item_list, page_counts):
+def fill_index(template_path, output_path, set_info, item_list, page_counts, project_info):
+    """
+    Fill the item-index DOCX template with set info and item rows.
+
+    Uses project_info passed explicitly to avoid relying on module-level state.
+    """
     doc = Document(template_path)
     for para in doc.paragraphs:
         for run in para.runs:
             replacements = {
                 "{{SET_NAME}}": set_info["name"],
                 "{{SPEC}}": set_info["spec"],
-                "{{DATE}}": PROJECT_INFO["date"],
-                "{{PROJECT_NAME}}": PROJECT_INFO["project_name"],
+                "{{DATE}}": project_info["date"],
+                "{{PROJECT_NAME}}": project_info["project_name"],
             }
             for tag, repl in replacements.items():
                 if tag in run.text:
@@ -324,6 +381,7 @@ def fill_index(template_path, output_path, set_info, item_list, page_counts):
             mfr = item.get("manufacturer", "")
             pages = page_counts.get(item_num, "-")
             doc.add_paragraph("{}  |  {}  |  {} pages".format(desc, mfr, pages))
+
     doc.save(output_path)
     return output_path
 
@@ -332,7 +390,7 @@ def fill_index(template_path, output_path, set_info, item_list, page_counts):
 # Build one set
 # ===================================================================
 
-def build_set(set_info, manifest, project_dir, output_dir, work_dir):
+def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_info):
     sid = set_info["id"]
     name = set_info["name"]
     items = set_info["items"]
@@ -343,14 +401,14 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
     print("  Items: {}".format(items))
     print(DIVIDER)
 
-    parts = []  # list of (label, pdf_path)
+    parts = []  # list of (bookmark_label, pdf_path)
 
     # 1. Cover page
     cover_tmpl = TEMPLATES_DIR / "submittal cover.xlsx"
     if cover_tmpl.exists():
         cover_out = work_dir / "cover_{}.xlsx".format(sid)
         try:
-            fill_cover(cover_tmpl, cover_out, set_info, PROJECT_INFO)
+            fill_cover(cover_tmpl, cover_out, set_info, project_info)
             pdf = lo_convert(cover_out, work_dir)
             if pdf:
                 parts.append(("Cover Sheet", pdf))
@@ -363,7 +421,7 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
     else:
         print("  WARN: Cover template not found: " + str(cover_tmpl))
 
-    # 2. Item Index
+    # 2. Item index
     page_counts = {}
     for inum in items:
         row = manifest.get(inum, {})
@@ -378,7 +436,7 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
         item_rows = [manifest[i] for i in items if i in manifest]
         index_out = work_dir / "index_{}.docx".format(sid)
         try:
-            fill_index(index_tmpl, index_out, set_info, item_rows, page_counts)
+            fill_index(index_tmpl, index_out, set_info, item_rows, page_counts, project_info)
             pdf = lo_convert(index_out, work_dir)
             if pdf:
                 parts.append(("Item Index", pdf))
@@ -401,7 +459,6 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
             sep_tmpl = p
             break
     if sep_tmpl is None:
-        # Try case-insensitive search
         for p in TEMPLATES_DIR.iterdir():
             if "seperat" in p.name.lower() or "separat" in p.name.lower():
                 if p.suffix.lower() == ".docx":
@@ -468,8 +525,9 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
             print("  WARN: Error merging {}:".format(pdf_path.name))
             traceback.print_exc()
 
+    project_slug = project_dir.name
     safe = name.replace(" ", "-").replace("&", "and")
-    fname = "Double-RR_SUB-{}_{}.pdf".format(sid, safe)
+    fname = "{}_SUB-{}_{}.pdf".format(project_slug, sid, safe)
     out = output_dir / fname
     with open(out, "wb") as f:
         writer.write(f)
@@ -480,10 +538,10 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build 11 submittal-set PDFs")
-    parser.add_argument("--project", required=True)
+    parser = argparse.ArgumentParser(description="Build submittal-set PDFs from Office templates")
+    parser.add_argument("--project", required=True, help="Project folder name under submittals/")
     parser.add_argument("--inspect", action="store_true",
-                        help="Print template structure and exit")
+                        help="Print template structure and exit (no PDFs built)")
     args = parser.parse_args()
 
     project_dir = SUBMITTALS_DIR / args.project
@@ -497,7 +555,8 @@ def main():
     print("  Mode:    " + ("INSPECT" if args.inspect else "BUILD"))
     print("=" * 60)
 
-    # List templates
+    project_info, submittal_sets = load_project_config(project_dir)
+
     print("")
     print("Templates dir: " + str(TEMPLATES_DIR))
     if TEMPLATES_DIR.exists():
@@ -507,7 +566,6 @@ def main():
     else:
         sys.exit("ERROR: templates dir not found")
 
-    # Inspect mode
     if args.inspect:
         print("")
         print("=== TEMPLATE INSPECTION ===")
@@ -556,16 +614,15 @@ def main():
     print("Output dir: " + str(output_dir))
 
     results = []
-    for si in SUBMITTAL_SETS:
+    for si in submittal_sets:
         try:
-            res = build_set(si, manifest, project_dir, output_dir, work_dir)
+            res = build_set(si, manifest, project_dir, output_dir, work_dir, project_info)
             results.append((si, res))
         except Exception:
             print("  FATAL ERROR building set {}:".format(si["id"]))
             traceback.print_exc()
             results.append((si, None))
 
-    # Summary
     print("")
     print("=" * 60)
     print("  BUILD SUMMARY")
@@ -579,7 +636,7 @@ def main():
         else:
             print("  FAIL SET-{}: {}".format(si["id"], si["name"]))
     print("")
-    print("  {}/{} sets built".format(ok, len(SUBMITTAL_SETS)))
+    print("  {}/{} sets built".format(ok, len(submittal_sets)))
     print("  Output: " + str(output_dir))
 
     shutil.rmtree(work_dir, ignore_errors=True)
