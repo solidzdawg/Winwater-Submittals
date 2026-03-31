@@ -32,20 +32,25 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq libreoffice-writer libreoffice-calc
+          echo "LibreOffice version:"
+          libreoffice --version || soffice --version || echo "WARNING: libreoffice not found in PATH"
+          which libreoffice || which soffice || echo "WARNING: neither libreoffice nor soffice in PATH"
 
       - name: Install Python packages
-        run: pip install pypdf openpyxl python-docx
+        run: |
+          pip install pypdf openpyxl python-docx
+          python -c "import pypdf; import openpyxl; from docx import Document; print('All packages OK')"
 
       - name: Inspect templates
-        if: inputs.inspect_only == 'true'
+        if: github.event.inputs.inspect_only == 'true'
         run: python scripts/build-submittal-sets.py --project "${{ github.event.inputs.project }}" --inspect
 
       - name: Build 11 submittal sets
-        if: inputs.inspect_only != 'true'
+        if: github.event.inputs.inspect_only != 'true'
         run: python scripts/build-submittal-sets.py --project "${{ github.event.inputs.project }}"
 
       - name: List generated PDFs
-        if: inputs.inspect_only != 'true'
+        if: github.event.inputs.inspect_only != 'true'
         run: |
           echo "=== Generated Submittal Set PDFs ==="
           find submittals/${{ github.event.inputs.project }}/sets -name '*.pdf' -type f | sort
@@ -53,7 +58,7 @@ jobs:
           ls -lh submittals/${{ github.event.inputs.project }}/sets/*.pdf 2>/dev/null || echo "No PDFs found"
 
       - name: Commit submittal sets
-        if: inputs.inspect_only != 'true'
+        if: github.event.inputs.inspect_only != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
