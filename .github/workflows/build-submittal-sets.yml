@@ -1,0 +1,63 @@
+name: Build Submittal Sets
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project folder name (e.g. Double-RR)'
+        required: true
+        default: 'Double-RR'
+      inspect_only:
+        description: 'Inspect templates only (true/false)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libreoffice-writer libreoffice-calc
+
+      - name: Install Python packages
+        run: pip install pypdf openpyxl python-docx
+
+      - name: Inspect templates
+        if: inputs.inspect_only == 'true'
+        run: python scripts/build-submittal-sets.py --project "${{ github.event.inputs.project }}" --inspect
+
+      - name: Build 11 submittal sets
+        if: inputs.inspect_only != 'true'
+        run: python scripts/build-submittal-sets.py --project "${{ github.event.inputs.project }}"
+
+      - name: List generated PDFs
+        if: inputs.inspect_only != 'true'
+        run: |
+          echo "=== Generated Submittal Set PDFs ==="
+          find submittals/${{ github.event.inputs.project }}/sets -name '*.pdf' -type f | sort
+          echo "===================================="
+          ls -lh submittals/${{ github.event.inputs.project }}/sets/*.pdf 2>/dev/null || echo "No PDFs found"
+
+      - name: Commit submittal sets
+        if: inputs.inspect_only != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add submittals/${{ github.event.inputs.project }}/sets/*.pdf
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "feat: build ${{ github.event.inputs.project }} submittal sets (11 PDFs) [automated]"
+          git push
