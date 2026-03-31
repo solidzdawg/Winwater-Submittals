@@ -5,12 +5,9 @@ build-submittal-sets.py
 Generates 11 individual submittal-set PDFs for a project.
 
 Each set contains:
-  1. Cover page      (from submittal cover.xlsx, filled via openpyxl)
-  2. Item index page  (from Item Index Template.docx, filled via python-docx)
+  1. Cover page      (from submittal cover.xlsx via openpyxl + LibreOffice)
+  2. Item index page  (from Item Index Template.docx via python-docx + LibreOffice)
   3. Per-item:  separator page (Seperator Sheet Template.docx) + vendor cut-sheet PDF
-
-All Office-to-PDF conversion uses LibreOffice headless.
-Final assembly uses pypdf with bookmarks.
 
 Usage:
     python build-submittal-sets.py --project Double-RR
@@ -49,16 +46,13 @@ except ImportError:
     sys.exit("ERROR: python-docx not installed.  pip install python-docx")
 
 # ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 SUBMITTALS_DIR = BASE_DIR / "submittals"
-
 DIVIDER = "-" * 60
 
 # ---------------------------------------------------------------------------
-# Project-specific info  (edit per job)
+# Project info
 # ---------------------------------------------------------------------------
 PROJECT_INFO = {
     "project_name": "Double RR Ranch - East Cabins",
@@ -73,7 +67,7 @@ PROJECT_INFO = {
 }
 
 # ---------------------------------------------------------------------------
-# The 11 submittal sets  (item numbers reference manifest.csv)
+# 11 submittal sets
 # ---------------------------------------------------------------------------
 SUBMITTAL_SETS = [
     {"id": "01", "name": "Pressure Reducing Valves",  "items": [1, 2],           "spec": "22 05 23"},
@@ -85,17 +79,12 @@ SUBMITTAL_SETS = [
     {"id": "07", "name": "Pressure Gauge",             "items": [10],             "spec": "22 05 23"},
     {"id": "08", "name": "Pumps",                      "items": [11, 12],         "spec": "22 11 19"},
     {"id": "09", "name": "Domestic Hot Water",         "items": [13, 14, 15, 16], "spec": "22 34 00"},
-    {"id": "10", "name": "Drainage & Specialties",     "items": [17, 18],         "spec": "22 40 00"},
-    {"id": "11", "name": "Safety & Insulation",        "items": [19, 20],         "spec": "22 42 00"},
+    {"id": "10", "name": "Drainage and Specialties",   "items": [17, 18],         "spec": "22 40 00"},
+    {"id": "11", "name": "Safety and Insulation",      "items": [19, 20],         "spec": "22 42 00"},
 ]
 
 
-# ===================================================================
-# Helpers
-# ===================================================================
-
 def load_manifest(project_dir):
-    """Return manifest keyed by item_number (int)."""
     path = project_dir / "manifest.csv"
     with open(path, newline="", encoding="utf-8") as f:
         return {int(row["item_number"]): row for row in csv.DictReader(f)}
@@ -109,56 +98,74 @@ def count_pdf_pages(pdf_path):
 
 
 def find_libreoffice():
-    """Return the LibreOffice binary name available on this system."""
-    for name in ["libreoffice", "soffice", "/usr/bin/libreoffice", "/usr/bin/soffice"]:
-        if shutil.which(name):
+    for name in ["libreoffice", "soffice",
+                 "/usr/bin/libreoffice", "/usr/bin/soffice",
+                 "/snap/bin/libreoffice"]:
+        if shutil.which(name) or os.path.isfile(name):
             return name
-    return "libreoffice"  # fallback, will error if not found
+    return "libreoffice"
 
 
-LO_BIN = None  # resolved lazily
+LO_BIN = None
 
 
 def lo_convert(input_path, output_dir):
-    """Convert an Office file to PDF via LibreOffice headless."""
+    """Convert Office file to PDF via LibreOffice headless."""
     global LO_BIN
     if LO_BIN is None:
         LO_BIN = find_libreoffice()
-        print("  LibreOffice binary: " + LO_BIN)
+        print("  LO binary: " + LO_BIN)
+
+    # Create a unique user profile to avoid lock conflicts
+    profile_dir = os.path.join(str(output_dir), "lo_profile_" + input_path.stem)
+    os.makedirs(profile_dir, exist_ok=True)
 
     env = os.environ.copy()
-    env["HOME"] = str(output_dir)
+    env["HOME"] = profile_dir
+
     cmd = [
-        LO_BIN, "--headless", "--norestore",
+        LO_BIN, "--headless", "--norestore", "--nolockcheck",
+        "-env:UserInstallation=file://" + profile_dir,
         "--convert-to", "pdf",
         "--outdir", str(output_dir),
         str(input_path),
     ]
-    print("  CMD: " + " ".join(cmd))
-    result = subprocess.run(cmd, capture_output=True, text=True,
-                            timeout=180, env=env)
-    if result.returncode != 0:
-        print("  WARNING: LO convert failed for: " + input_path.name)
-        print("      stdout: " + result.stdout[:400])
-        print("      stderr: " + result.stderr[:400])
+    print("  LO cmd: " + " ".join(cmd))
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
+    except subprocess.TimeoutExpired:
+        print("  ERROR: LibreOffice timed out for " + input_path.name)
         return None
-    if result.stdout:
-        print("      LO stdout: " + result.stdout[:200])
+    except FileNotFoundError:
+        print("  ERROR: LibreOffice binary not found: " + LO_BIN)
+        return None
+
+    print("  LO exit: " + str(result.returncode))
+    if result.stdout.strip():
+        print("  LO stdout: " + result.stdout.strip()[:300])
+    if result.stderr.strip():
+        print("  LO stderr: " + result.stderr.strip()[:300])
+
     pdf_path = output_dir / (input_path.stem + ".pdf")
     if pdf_path.exists():
+        print("  LO output: " + str(pdf_path) + " (" + str(pdf_path.stat().st_size) + " bytes)")
         return pdf_path
-    # Sometimes LO changes the name slightly; search for it
-    candidates = list(output_dir.glob(input_path.stem + "*.pdf"))
-    if candidates:
-        return candidates[0]
-    print("  WARNING: Expected PDF not found: " + str(pdf_path))
-    # List what IS in the output dir
-    print("      Files in output_dir: " + str(list(output_dir.glob("*.pdf"))))
+
+    # Search for any PDF that was created
+    candidates = sorted(output_dir.glob("*.pdf"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for c in candidates:
+        if input_path.stem.lower() in c.stem.lower():
+            print("  LO output (alt match): " + str(c))
+            return c
+
+    print("  WARNING: No PDF output found. Files in outdir:")
+    for f in sorted(output_dir.iterdir()):
+        print("    " + f.name)
     return None
 
 
 # ===================================================================
-# Template inspection  (--inspect mode)
+# Template inspection
 # ===================================================================
 
 def inspect_xlsx(path):
@@ -166,8 +173,7 @@ def inspect_xlsx(path):
     for name in wb.sheetnames:
         ws = wb[name]
         print("  Sheet '{}' ({} rows x {} cols)".format(name, ws.max_row, ws.max_column))
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row,
-                                max_col=ws.max_column):
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
             for cell in row:
                 if cell.value is not None:
                     print("    {}: {}".format(cell.coordinate, repr(cell.value)))
@@ -188,50 +194,53 @@ def inspect_docx(path):
 
 
 # ===================================================================
-# Template fill functions
+# Template fill
 # ===================================================================
 
-def _set_cell_if_empty(target, value):
-    """Set a cell only if it looks empty or placeholder-ish."""
+def set_cell_if_empty(target, value):
     tv = str(target.value or "").strip()
     if tv == "" or tv.startswith("{") or tv.startswith("<"):
         target.value = value
 
 
 def fill_cover(template_path, output_path, set_info, project_info):
-    """Copy the XLSX cover template and fill project / set fields."""
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
     submittal_num = "{}-{}".format(project_info["submittal_prefix"], set_info["id"])
     set_label = "Submittal {} - {}".format(set_info["id"], set_info["name"])
 
-    for row in ws.iter_rows(min_row=1, max_row=ws.max_row,
-                            max_col=ws.max_column):
+    max_row = ws.max_row or 1
+    max_col = ws.max_column or 1
+
+    for row in ws.iter_rows(min_row=1, max_row=max_row, max_col=max_col):
         for cell in row:
             val = str(cell.value or "").strip()
             up = val.upper()
 
-            right = ws.cell(row=cell.row, column=cell.column + 1)
+            if cell.column + 1 <= max_col:
+                right = ws.cell(row=cell.row, column=cell.column + 1)
+            else:
+                right = None
 
-            if "SUBMITTAL" in up and ("#" in up or "NO" in up or "NUM" in up):
-                _set_cell_if_empty(right, submittal_num)
-            elif up in ("DATE:", "DATE"):
-                _set_cell_if_empty(right, project_info["date"])
-            elif up.startswith("TO:") or up == "TO":
-                _set_cell_if_empty(right, project_info.get("to_name", ""))
-            elif "PROJECT" in up and ("#" in up or "NO" in up or "NUM" in up or "NAME" in up):
-                _set_cell_if_empty(right, project_info["project_name"])
-            elif up in ("RE:", "SUBJECT:", "DESCRIPTION:", "SUMMARY:"):
-                _set_cell_if_empty(right, set_label)
-            elif up in ("SUBMITTED BY:", "FROM:", "PREPARED BY:"):
-                _set_cell_if_empty(right, project_info["submitted_by"])
-            elif up in ("REVISION:", "REV:", "REV"):
-                _set_cell_if_empty(right, project_info["revision"])
-            elif up in ("SPEC SECTION:", "SPECIFICATION:", "SPEC:"):
-                _set_cell_if_empty(right, set_info["spec"])
+            if right is not None:
+                if "SUBMITTAL" in up and ("#" in up or "NO" in up or "NUM" in up):
+                    set_cell_if_empty(right, submittal_num)
+                elif up in ("DATE:", "DATE"):
+                    set_cell_if_empty(right, project_info["date"])
+                elif up.startswith("TO:") or up == "TO":
+                    set_cell_if_empty(right, project_info.get("to_name", ""))
+                elif "PROJECT" in up and ("#" in up or "NO" in up or "NUM" in up or "NAME" in up):
+                    set_cell_if_empty(right, project_info["project_name"])
+                elif up in ("RE:", "SUBJECT:", "DESCRIPTION:", "SUMMARY:"):
+                    set_cell_if_empty(right, set_label)
+                elif up in ("SUBMITTED BY:", "FROM:", "PREPARED BY:"):
+                    set_cell_if_empty(right, project_info["submitted_by"])
+                elif up in ("REVISION:", "REV:", "REV"):
+                    set_cell_if_empty(right, project_info["revision"])
+                elif up in ("SPEC SECTION:", "SPECIFICATION:", "SPEC:"):
+                    set_cell_if_empty(right, set_info["spec"])
 
-            # Also try filling cells that contain placeholder markers
             if "{{" in val:
                 replacements = {
                     "{{SUBMITTAL_NUM}}": submittal_num,
@@ -253,15 +262,12 @@ def fill_cover(template_path, output_path, set_info, project_info):
 
 
 def fill_separator(template_path, output_path, label_text):
-    """Copy separator DOCX and replace the placeholder text with label_text."""
     doc = Document(template_path)
     replaced = False
-
     for para in doc.paragraphs:
         txt = para.text.strip()
         if not txt:
             continue
-        # Replace the first non-empty paragraph (the placeholder)
         if para.runs:
             para.runs[0].text = label_text
             for run in para.runs[1:]:
@@ -270,20 +276,15 @@ def fill_separator(template_path, output_path, label_text):
             para.text = label_text
         replaced = True
         break
-
     if not replaced:
         p = doc.add_paragraph(label_text)
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
     doc.save(output_path)
     return output_path
 
 
 def fill_index(template_path, output_path, set_info, item_list, page_counts):
-    """Copy the item-index DOCX and populate the table with items."""
     doc = Document(template_path)
-
-    # --- Try to fill header/paragraph placeholders -------------------------
     for para in doc.paragraphs:
         for run in para.runs:
             replacements = {
@@ -296,15 +297,12 @@ def fill_index(template_path, output_path, set_info, item_list, page_counts):
                 if tag in run.text:
                     run.text = run.text.replace(tag, repl)
 
-    # --- Fill the first table found ----------------------------------------
     if doc.tables:
         tbl = doc.tables[0]
-        # Keep header row(s): assume first row is header
         header_count = 1
         while len(tbl.rows) > header_count:
             tr = tbl.rows[-1]._tr
             tbl._tbl.remove(tr)
-
         for item in item_list:
             item_num = int(item["item_number"])
             desc = item.get("description", "")
@@ -318,7 +316,6 @@ def fill_index(template_path, output_path, set_info, item_list, page_counts):
             if len(cells) > 2:
                 cells[2].text = str(pages)
     else:
-        # No table found - append a simple list
         doc.add_paragraph("")
         doc.add_paragraph("Submittal Set {} - {}".format(set_info["id"], set_info["name"]))
         for item in item_list:
@@ -327,13 +324,12 @@ def fill_index(template_path, output_path, set_info, item_list, page_counts):
             mfr = item.get("manufacturer", "")
             pages = page_counts.get(item_num, "-")
             doc.add_paragraph("{}  |  {}  |  {} pages".format(desc, mfr, pages))
-
     doc.save(output_path)
     return output_path
 
 
 # ===================================================================
-# Build one submittal set
+# Build one set
 # ===================================================================
 
 def build_set(set_info, manifest, project_dir, output_dir, work_dir):
@@ -347,10 +343,9 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
     print("  Items: {}".format(items))
     print(DIVIDER)
 
-    # Collect (label, pdf_path) pairs in assembly order
-    parts = []
+    parts = []  # list of (label, pdf_path)
 
-    # -- 1. Cover page -------------------------------------------------------
+    # 1. Cover page
     cover_tmpl = TEMPLATES_DIR / "submittal cover.xlsx"
     if cover_tmpl.exists():
         cover_out = work_dir / "cover_{}.xlsx".format(sid)
@@ -361,14 +356,14 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
                 parts.append(("Cover Sheet", pdf))
                 print("  OK: Cover page")
             else:
-                print("  WARNING: Cover page conversion failed")
-        except Exception as exc:
-            print("  ERROR in cover: {}".format(exc))
+                print("  WARN: Cover page LO conversion failed")
+        except Exception:
+            print("  ERROR in cover:")
             traceback.print_exc()
     else:
-        print("  WARNING: Cover template not found: {}".format(cover_tmpl))
+        print("  WARN: Cover template not found: " + str(cover_tmpl))
 
-    # -- 2. Item Index -------------------------------------------------------
+    # 2. Item Index
     page_counts = {}
     for inum in items:
         row = manifest.get(inum, {})
@@ -389,22 +384,33 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
                 parts.append(("Item Index", pdf))
                 print("  OK: Item index")
             else:
-                print("  WARNING: Item index conversion failed")
-        except Exception as exc:
-            print("  ERROR in index: {}".format(exc))
+                print("  WARN: Item index LO conversion failed")
+        except Exception:
+            print("  ERROR in index:")
             traceback.print_exc()
     else:
-        print("  WARNING: Item Index template not found: {}".format(index_tmpl))
+        print("  WARN: Item Index template not found")
 
-    # -- 3. Per-item: separator + cut sheet ---------------------------------
-    sep_tmpl = TEMPLATES_DIR / "Seperator Sheet Template.docx"
-    if not sep_tmpl.exists():
-        print("  WARNING: Separator template not found: {}".format(sep_tmpl))
-        # Try alternate spelling
-        alt = TEMPLATES_DIR / "Separator Sheet Template.docx"
-        if alt.exists():
-            sep_tmpl = alt
-            print("  Found alternate: {}".format(alt.name))
+    # 3. Per-item: separator + cut sheet
+    sep_tmpl = None
+    for candidate in ["Seperator Sheet Template.docx", "Separator Sheet Template.docx",
+                      "seperator sheet template.docx", "separator sheet.docx",
+                      "Seperator Sheet.docx"]:
+        p = TEMPLATES_DIR / candidate
+        if p.exists():
+            sep_tmpl = p
+            break
+    if sep_tmpl is None:
+        # Try case-insensitive search
+        for p in TEMPLATES_DIR.iterdir():
+            if "seperat" in p.name.lower() or "separat" in p.name.lower():
+                if p.suffix.lower() == ".docx":
+                    sep_tmpl = p
+                    break
+    if sep_tmpl:
+        print("  Separator template: " + sep_tmpl.name)
+    else:
+        print("  WARN: No separator template found")
 
     for inum in items:
         row = manifest.get(inum, {})
@@ -414,23 +420,23 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
 
         sep_label = desc
         if mfr:
-            sep_label += "\n" + mfr
+            sep_label = sep_label + "\n" + mfr
         if model:
-            sep_label += " " + model
+            sep_label = sep_label + " " + model
 
         # Separator page
-        if sep_tmpl.exists():
+        if sep_tmpl:
             sep_out = work_dir / "sep_{}_{:02d}.docx".format(sid, inum)
             try:
                 fill_separator(sep_tmpl, sep_out, sep_label)
                 pdf = lo_convert(sep_out, work_dir)
                 if pdf:
                     parts.append(("Item {:02d} - {}".format(inum, desc), pdf))
-                    print("  OK: Separator: Item {:02d}".format(inum))
+                    print("  OK: Separator Item {:02d}".format(inum))
                 else:
-                    print("  WARNING: Separator conversion failed: Item {:02d}".format(inum))
-            except Exception as exc:
-                print("  ERROR in separator {}: {}".format(inum, exc))
+                    print("  WARN: Separator LO failed: Item {:02d}".format(inum))
+            except Exception:
+                print("  ERROR in separator {}:".format(inum))
                 traceback.print_exc()
 
         # Cut sheet
@@ -439,11 +445,11 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
             full = BASE_DIR / cp
             if full.exists():
                 parts.append(("Cut Sheet - {}".format(desc), full))
-                print("  OK: Cut sheet: Item {:02d} ({})".format(inum, full.name))
+                print("  OK: Cut sheet Item {:02d} ({})".format(inum, full.name))
             else:
-                print("  WARNING: Cut sheet NOT FOUND: {}".format(cp))
+                print("  WARN: Cut sheet NOT FOUND: {}".format(cp))
 
-    # -- 4. Assemble ---------------------------------------------------------
+    # 4. Assemble
     if not parts:
         print("  FAIL: No PDFs to merge for SET {}".format(sid))
         return None
@@ -458,8 +464,8 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
                 writer.add_page(page)
                 total += 1
             writer.add_outline_item(label, bm_page)
-        except Exception as exc:
-            print("  WARNING: Error merging {}: {}".format(pdf_path.name, exc))
+        except Exception:
+            print("  WARN: Error merging {}:".format(pdf_path.name))
             traceback.print_exc()
 
     safe = name.replace(" ", "-").replace("&", "and")
@@ -468,14 +474,10 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir):
     with open(out, "wb") as f:
         writer.write(f)
 
-    mb = out.stat().st_size / 1_048_576
+    mb = out.stat().st_size / 1048576.0
     print("  DONE: {} - {} pages ({:.1f} MB)".format(fname, total, mb))
     return out
 
-
-# ===================================================================
-# Main
-# ===================================================================
 
 def main():
     parser = argparse.ArgumentParser(description="Build 11 submittal-set PDFs")
@@ -486,45 +488,53 @@ def main():
 
     project_dir = SUBMITTALS_DIR / args.project
     if not project_dir.exists():
-        sys.exit("ERROR: project folder not found: {}".format(project_dir))
+        sys.exit("ERROR: project folder not found: " + str(project_dir))
 
     print("")
     print("=" * 60)
     print("  Winwater Submittal Set Builder")
-    print("  Project: {}".format(args.project))
-    print("  Mode:    {}".format("INSPECT" if args.inspect else "BUILD"))
+    print("  Project: " + args.project)
+    print("  Mode:    " + ("INSPECT" if args.inspect else "BUILD"))
     print("=" * 60)
 
     # List templates
     print("")
-    print("Templates directory: {}".format(TEMPLATES_DIR))
+    print("Templates dir: " + str(TEMPLATES_DIR))
     if TEMPLATES_DIR.exists():
         for p in sorted(TEMPLATES_DIR.iterdir()):
-            print("  {} ({:.0f} KB)".format(p.name, p.stat().st_size / 1024))
+            sz = p.stat().st_size
+            print("  {} ({} bytes)".format(p.name, sz))
     else:
-        sys.exit("ERROR: templates directory not found: {}".format(TEMPLATES_DIR))
+        sys.exit("ERROR: templates dir not found")
 
-    # -- Inspect mode --------------------------------------------------------
+    # Inspect mode
     if args.inspect:
         print("")
         print("=== TEMPLATE INSPECTION ===")
         for path in sorted(TEMPLATES_DIR.iterdir()):
             if path.suffix == ".xlsx":
                 print("")
-                print("> {}".format(path.name))
-                inspect_xlsx(path)
+                print("> " + path.name)
+                try:
+                    inspect_xlsx(path)
+                except Exception:
+                    print("  ERROR inspecting:")
+                    traceback.print_exc()
             elif path.suffix == ".docx":
                 print("")
-                print("> {}".format(path.name))
-                inspect_docx(path)
+                print("> " + path.name)
+                try:
+                    inspect_docx(path)
+                except Exception:
+                    print("  ERROR inspecting:")
+                    traceback.print_exc()
         return
 
-    # -- Build mode ----------------------------------------------------------
+    # Build mode
     manifest = load_manifest(project_dir)
     print("")
     print("Manifest: {} items loaded".format(len(manifest)))
 
-    # Verify vendor-docs exist
     missing = 0
     for inum, row in manifest.items():
         cp = row.get("cut_sheet_path", "").strip()
@@ -534,27 +544,24 @@ def main():
                 print("  MISSING: Item {} - {}".format(inum, cp))
                 missing += 1
     if missing:
-        print("  WARNING: {} vendor PDFs missing".format(missing))
+        print("  {} vendor PDFs missing".format(missing))
     else:
         print("  All vendor PDFs found")
 
-    # Output directory
     output_dir = project_dir / "sets"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Temp working directory
     work_dir = Path(tempfile.mkdtemp(prefix="winwater_"))
-    print("Work dir: {}".format(work_dir))
-    print("Output dir: {}".format(output_dir))
+    print("Work dir: " + str(work_dir))
+    print("Output dir: " + str(output_dir))
 
-    # Build each set
     results = []
     for si in SUBMITTAL_SETS:
         try:
             res = build_set(si, manifest, project_dir, output_dir, work_dir)
             results.append((si, res))
-        except Exception as exc:
-            print("  FATAL ERROR building set {}: {}".format(si["id"], exc))
+        except Exception:
+            print("  FATAL ERROR building set {}:".format(si["id"]))
             traceback.print_exc()
             results.append((si, None))
 
@@ -566,22 +573,19 @@ def main():
     ok = 0
     for si, res in results:
         if res and res.exists():
-            mb = res.stat().st_size / 1_048_576
-            print("  OK  SET-{}: {} ({:.1f} MB)".format(si["id"], si["name"], mb))
+            mb = res.stat().st_size / 1048576.0
+            print("  OK   SET-{}: {} ({:.1f} MB)".format(si["id"], si["name"], mb))
             ok += 1
         else:
             print("  FAIL SET-{}: {}".format(si["id"], si["name"]))
     print("")
-    print("  {}/{} sets built successfully".format(ok, len(SUBMITTAL_SETS)))
-    print("  Output: {}".format(output_dir))
+    print("  {}/{} sets built".format(ok, len(SUBMITTAL_SETS)))
+    print("  Output: " + str(output_dir))
 
-    # Cleanup temp dir
     shutil.rmtree(work_dir, ignore_errors=True)
 
     if ok == 0:
         sys.exit(1)
-    elif ok < len(SUBMITTAL_SETS):
-        print("  WARNING: Some sets failed, but partial results committed")
 
 
 if __name__ == "__main__":
