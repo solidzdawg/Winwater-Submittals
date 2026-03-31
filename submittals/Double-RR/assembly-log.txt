@@ -1,48 +1,35 @@
 Winwater Submittal Assembly Log
 Project: Double-RR
-Output:  Double-RR_SUB_001_Rev0_PlumbingEquipment.pdf
-Pages:   118
+Output: Double-RR_SUB_001_Rev0_PlumbingEquipment.pdf
+Pages: 99
+Sections: 8
+Items: 20
 
-OK: 01-cover/cover-sheet.pdf
-OK: 02-index/item-index.pdf
-OK: 03-items/Item-01/01-separator.pdf
-OK: 03-items/Item-01/02-Watts_LF25AUB_Cut-Sheet.pdf
-OK: 03-items/Item-02/01-separator.pdf
-OK: 03-items/Item-02/02-Watts_LF25AUB_Cut-Sheet.pdf
-OK: 03-items/Item-03/01-separator.pdf
-OK: 03-items/Item-03/02-Watts_LF909_Cut-Sheet.pdf
-OK: 03-items/Item-04/01-separator.pdf
-OK: 03-items/Item-04/02-Watts_LF007M1-QT_Cut-Sheet.pdf
-OK: 03-items/Item-05/01-separator.pdf
-OK: 03-items/Item-05/02-Apollo_94ALF_Cut-Sheet.pdf
-OK: 03-items/Item-06/01-separator.pdf
-OK: 03-items/Item-06/02-Apollo_94ALF_Cut-Sheet.pdf
-OK: 03-items/Item-07/01-separator.pdf
-OK: 03-items/Item-07/02-NIBCO_LD-3010_Cut-Sheet.pdf
-OK: 03-items/Item-08/01-separator.pdf
-OK: 03-items/Item-08/02-Watts_LF2000B_Cut-Sheet.pdf
-OK: 03-items/Item-09/01-separator.pdf
-OK: 03-items/Item-09/02-BadgerMeter_Recordall-Turbo-250_Cut-Sheet.pdf
-OK: 03-items/Item-10/01-separator.pdf
-OK: 03-items/Item-10/02-Watts_LFDPG1_Cut-Sheet.pdf
-OK: 03-items/Item-11/01-separator.pdf
-OK: 03-items/Item-11/02-Xylem_e-HM-Technologic_Cut-Sheet.pdf
-OK: 03-items/Item-12/01-separator.pdf
-OK: 03-items/Item-12/02-Xylem_Ecocirc-XL-20-35_Cut-Sheet.pdf
-OK: 03-items/Item-13/01-separator.pdf
-OK: 03-items/Item-13/02-AOSmith_BTH-500A_Cut-Sheet.pdf
-OK: 03-items/Item-14/01-separator.pdf
-OK: 03-items/Item-14/02-Watts_LFL111-3_Cut-Sheet.pdf
-OK: 03-items/Item-15/01-separator.pdf
-OK: 03-items/Item-15/02-Watts_PLT-40_Cut-Sheet.pdf
-OK: 03-items/Item-16/01-separator.pdf
-OK: 03-items/Item-16/02-Watts_LF100XL_Cut-Sheet.pdf
-OK: 03-items/Item-17/01-separator.pdf
-OK: 03-items/Item-17/02-Zurn_ZN415-12_Cut-Sheet.pdf
-OK: 03-items/Item-18/01-separator.pdf
-OK: 03-items/Item-18/02-Zurn_Z1365_Cut-Sheet.pdf
-OK: 03-items/Item-19/01-separator.pdf
-OK: 03-items/Item-19/02-Watts_LF1170M2-US_Cut-Sheet.pdf
-OK: 03-items/Item-20/01-separator.pdf
-OK: 03-items/Item-20/02-JohnsManville_Micro-Lok-HP_Cut-Sheet.pdf
-OK: 04-attachments/disclaimer.pdf
+  Pressure Regulation:
+    Item 1: Pressure Reducing Valve — 2" Flanged (Watts)
+    Item 2: Pressure Reducing Valve — 3/4" Threaded (Watts)
+  Backflow Prevention:
+    Item 3: Reduced Pressure Zone Backflow Preventer — 2" (Watts)
+    Item 4: Double Check Valve Assembly — 1" (Watts)
+  Valves:
+    Item 5: Ball Valve — 2" Full Port Lead-Free (Apollo)
+    Item 6: Ball Valve — 3/4" Full Port Lead-Free (Apollo)
+    Item 7: Butterfly Valve — 4" Lug Style (Nibco)
+    Item 8: Check Valve — 2" Silent Wafer (Watts)
+  Metering & Instrumentation:
+    Item 9: Water Meter — 2" Turbine (Badger Meter)
+    Item 10: Pressure Gauge — 4-1/2" Liquid Filled 0-160 PSI (Watts)
+  Pumps:
+    Item 11: Domestic Water Booster Pump System (Xylem / Bell & Gossett)
+    Item 12: Inline Circulator Pump — Hot Water Return (Xylem / Bell & Gossett)
+  Domestic Hot Water:
+    Item 13: Gas-Fired Storage Water Heater — 100 Gal (A.O. Smith)
+    Item 14: Thermostatic Mixing Valve — 2" (Watts)
+    Item 15: Expansion Tank — 40 Gal Pre-Charged (Watts)
+    Item 16: T&P Relief Valve — 3/4" x 1" 150 PSI / 210°F (Watts)
+  Drainage & Specialties:
+    Item 17: Floor Drain — 12" Round Cast Iron (Zurn)
+    Item 18: Hose Bibb — 3/4" Freeze-Resistant (Zurn)
+  Safety & Insulation:
+    Item 19: Emergency Tempered Water Mixing Valve (Watts)
+    Item 20: Pipe Insulation — Fiberglass with ASJ Jacket (Johns Manville)
