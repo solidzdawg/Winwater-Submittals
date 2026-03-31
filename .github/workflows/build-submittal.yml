@@ -31,23 +31,19 @@ jobs:
             libffi-dev libcairo2 fonts-dejavu-core fonts-dejavu-extra
 
       - name: Install Python packages
-        run: pip install pypdf weasyprint markdown
+        run: pip install pypdf weasyprint
 
       - name: Build submittal package
         run: python scripts/build-package.py --project "${{ github.event.inputs.project }}"
 
-      - name: List generated PDFs
+      - name: Show output
         run: |
-          echo "=== Generated PDFs ==="
-          find submittals/${{ github.event.inputs.project }} -name '*.pdf' -type f | sort
-          echo "======================"
+          echo "=== Output ==="
+          find submittals/${{ github.event.inputs.project }} -maxdepth 1 \( -name '*.pdf' -o -name '*.txt' \) | sort
           FINAL=$(find submittals/${{ github.event.inputs.project }} -maxdepth 1 -name '*.pdf' -type f)
-          echo "Final package: $FINAL"
-          if [ -n "$FINAL" ]; then
-            ls -lh $FINAL
-          fi
+          if [ -n "$FINAL" ]; then ls -lh $FINAL; fi
 
-      - name: Commit final PDF + assembly log
+      - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
