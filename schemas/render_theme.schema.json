@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://winwater.local/schemas/render_theme.schema.json",
+  "title": "RenderTheme",
+  "type": "object",
+  "required": ["name", "page_size", "margin_in", "fonts", "font_sizes_pt", "colors", "spacing_pt"],
+  "properties": {
+    "name": {"type": "string"},
+    "page_size": {"type": "string", "enum": ["LETTER", "LEGAL", "A4"]},
+    "margin_in": {
+      "type": "object",
+      "required": ["top", "right", "bottom", "left"],
+      "properties": {
+        "top": {"type": "number"},
+        "right": {"type": "number"},
+        "bottom": {"type": "number"},
+        "left": {"type": "number"}
+      }
+    },
+    "fonts": {"type": "object"},
+    "font_sizes_pt": {"type": "object"},
+    "colors": {"type": "object"},
+    "spacing_pt": {"type": "object"}
+  }
+}

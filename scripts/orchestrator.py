@@ -18,8 +18,9 @@ Steps (executed in order for --full-run):
     1. validate      — Check project structure & manifest
     2. separators    — Generate separator sheets from manifest
     3. vendor-audit  — Audit vendor files, create missing dirs
-    4. qc            — Quality-control checks
-    5. assemble      — Merge all PDFs into final submittal
+    4. template-gate — Verify required templates + visual-quality readiness
+    5. qc            — Quality-control checks
+    6. assemble      — Merge all PDFs into final submittal
 """
 
 import argparse
@@ -34,6 +35,7 @@ from agents.validate_agent import validate_project, print_report
 from agents.separator_agent import run as generate_separators
 from agents.vendor_fetch_agent import check_vendor_files, print_vendor_report
 from agents.qc_agent import qc_check, print_qc_report
+from agents.template_compliance_agent import compliance_check, print_compliance_report
 
 
 BANNER = """
@@ -79,9 +81,18 @@ def step_vendor_audit(project: str, create_dirs: bool = True) -> bool:
     return True
 
 
+def step_template_gate(project: str) -> bool:
+    print("\n" + "─" * 60)
+    print("  STEP 4: TEMPLATE + PRESENTATION GATE")
+    print("─" * 60)
+    report = compliance_check(project)
+    print_compliance_report(report)
+    return len(report["failed"]) == 0
+
+
 def step_qc(project: str) -> bool:
     print("\n" + "─" * 60)
-    print("  STEP 4: QUALITY CONTROL")
+    print("  STEP 5: QUALITY CONTROL")
     print("─" * 60)
     report = qc_check(project)
     print_qc_report(report)
@@ -90,7 +101,7 @@ def step_qc(project: str) -> bool:
 
 def step_assemble(project: str, output: str | None = None) -> bool:
     print("\n" + "─" * 60)
-    print("  STEP 5: ASSEMBLE PDF")
+    print("  STEP 6: ASSEMBLE PDF")
     print("─" * 60)
     # Import the assembly script
     import importlib.util
@@ -126,6 +137,7 @@ def full_run(project: str) -> None:
         ("Validate", lambda: step_validate(project)),
         ("Separators", lambda: step_separators(project)),
         ("Vendor Audit", lambda: step_vendor_audit(project)),
+        ("Template Gate", lambda: step_template_gate(project)),
         ("QC Check", lambda: step_qc(project)),
         ("Assemble", lambda: step_assemble(project)),
     ]
@@ -157,7 +169,7 @@ def main():
     parser.add_argument("--project", required=True, help="Project folder name")
     parser.add_argument(
         "--step",
-        choices=["validate", "separators", "vendor-audit", "qc", "assemble"],
+        choices=["validate", "separators", "vendor-audit", "template-gate", "qc", "assemble"],
         help="Run a single step (default: full run)",
     )
     parser.add_argument("--full-run", action="store_true", help="Run all steps in sequence")
@@ -175,6 +187,7 @@ def main():
             "validate": lambda: step_validate(args.project),
             "separators": lambda: step_separators(args.project, args.force_separators),
             "vendor-audit": lambda: step_vendor_audit(args.project),
+            "template-gate": lambda: step_template_gate(args.project),
             "qc": lambda: step_qc(args.project),
             "assemble": lambda: step_assemble(args.project, args.output),
         }
