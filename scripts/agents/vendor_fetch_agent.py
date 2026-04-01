@@ -36,7 +36,10 @@ def check_vendor_files(project: str, create_dirs: bool = False) -> dict:
         found (list), missing (list), manufacturers (set),
         dirs_created (int)
     """
-    project_dir = SUBMITTALS_DIR / project
+    project_dir = (SUBMITTALS_DIR / project).resolve()
+    if not project_dir.is_relative_to(SUBMITTALS_DIR.resolve()):
+        raise ValueError(f"Access denied: Path traversal detected. Project '{project}' must be within {SUBMITTALS_DIR.resolve()}.")
+
     rows = load_manifest(project_dir)
     result = {
         "found": [],
