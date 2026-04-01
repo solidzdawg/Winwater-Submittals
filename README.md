@@ -45,6 +45,7 @@ Winwater-Submittals/
         ├── validate_agent.py      # Structure & manifest validation
         ├── separator_agent.py     # Auto-generate separator sheets from manifest
         ├── vendor_fetch_agent.py  # Audit vendor files, create missing dirs
+        ├── template_compliance_agent.py # Template + presentation gate
         └── qc_agent.py            # Quality-control checks & scoring
 ```
 
@@ -76,6 +77,22 @@ python scripts/build-submittal-sets.py --project "Double-RR"
 
 Outputs go to `submittals/Double-RR/sets/`.
 
+
+### Run Template/Presentation Compliance Gate
+
+Before building sets, run the template gate to catch low-quality inputs
+(long fields, missing templates, missing cut-sheet PDFs, unresolved placeholders):
+
+```bash
+python scripts/agents/template_compliance_agent.py --project "Double-RR"
+```
+
+You can also run it through the orchestrator:
+
+```bash
+python scripts/orchestrator.py --project "Double-RR" --step template-gate
+```
+
 ### Build Combined Package PDF
 
 Generates a single bookmarked PDF with cover → index → sections:
@@ -91,6 +108,16 @@ Print the structure of all Office templates (no PDFs built):
 ```bash
 python scripts/build-submittal-sets.py --project "Double-RR" --inspect
 ```
+
+
+### Template-Free Rendering Architecture (V2)
+
+For a no-Office-template rendering path (schema + theme + plugin backends), see:
+
+- `docs/v2/template-free-submittal-architecture.md`
+- `scripts/plugins/submittal_renderer_plugin.py`
+- `scripts/agents/repo_submittal_agent.py`
+- `skills/submittal-quality-skill/`
 
 ### CI / GitHub Actions
 
