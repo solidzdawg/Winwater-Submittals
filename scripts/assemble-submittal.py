@@ -82,7 +82,11 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
     Returns:
         Path to the assembled output PDF.
     """
-    project_dir = SUBMITTALS_DIR / project
+    project_dir = (SUBMITTALS_DIR / project).resolve()
+    if not project_dir.is_relative_to(SUBMITTALS_DIR.resolve()):
+        print(f"ERROR: Invalid project path: {project}")
+        sys.exit(1)
+
     if not project_dir.exists():
         print(f"ERROR: Project directory not found: {project_dir}")
         sys.exit(1)
@@ -203,7 +207,11 @@ def validate_project_structure(project: str) -> bool:
     Check that all expected directories exist and report missing items.
     Returns True if ready to assemble, False if there are blockers.
     """
-    project_dir = SUBMITTALS_DIR / project
+    project_dir = (SUBMITTALS_DIR / project).resolve()
+    if not project_dir.is_relative_to(SUBMITTALS_DIR.resolve()):
+        print(f"ERROR: Invalid project path: {project}")
+        return False
+
     required_dirs = [
         "01-cover",
         "02-index",

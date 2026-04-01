@@ -544,7 +544,10 @@ def main():
                         help="Print template structure and exit (no PDFs built)")
     args = parser.parse_args()
 
-    project_dir = SUBMITTALS_DIR / args.project
+    project_dir = (SUBMITTALS_DIR / args.project).resolve()
+    if not project_dir.is_relative_to(SUBMITTALS_DIR.resolve()):
+        sys.exit("ERROR: Invalid project path: " + str(args.project))
+
     if not project_dir.exists():
         sys.exit("ERROR: project folder not found: " + str(project_dir))
 

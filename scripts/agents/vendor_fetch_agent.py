@@ -36,14 +36,20 @@ def check_vendor_files(project: str, create_dirs: bool = False) -> dict:
         found (list), missing (list), manufacturers (set),
         dirs_created (int)
     """
-    project_dir = SUBMITTALS_DIR / project
-    rows = load_manifest(project_dir)
+    project_dir = (SUBMITTALS_DIR / project).resolve()
     result = {
         "found": [],
         "missing": [],
         "manufacturers": set(),
         "dirs_created": 0,
+        "errors": []
     }
+
+    if not project_dir.is_relative_to(SUBMITTALS_DIR.resolve()):
+        result["errors"].append(f"Invalid project path: {project}")
+        return result
+
+    rows = load_manifest(project_dir)
 
     if not rows:
         return result
