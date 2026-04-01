@@ -171,8 +171,13 @@ def run(project: str, force: bool = False) -> dict:
     Returns dict with keys: created (int), skipped (int), errors (list[str])
     """
     project_dir = SUBMITTALS_DIR / project
-    items_dir = project_dir / "03-items"
     result = {"created": 0, "skipped": 0, "errors": []}
+
+    if not project_dir.resolve().is_relative_to(SUBMITTALS_DIR.resolve()):
+        result["errors"].append(f"Invalid project path: {project}")
+        return result
+
+    items_dir = project_dir / "03-items"
 
     rows = load_manifest(project_dir)
     if not rows:

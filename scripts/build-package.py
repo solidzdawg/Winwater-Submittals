@@ -255,6 +255,9 @@ def separator_html(section_name):
 
 def build(project: str):
     project_dir = SUBMITTALS_DIR / project
+    if not project_dir.resolve().is_relative_to(SUBMITTALS_DIR.resolve()):
+        print(f"ERROR: Invalid project path: {project}")
+        sys.exit(1)
     if not project_dir.exists():
         print(f"ERROR: project folder not found: {project_dir}")
         sys.exit(1)

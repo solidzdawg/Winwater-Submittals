@@ -38,6 +38,10 @@ def qc_check(project: str) -> dict:
     project_dir = SUBMITTALS_DIR / project
     report = {"passed": [], "failed": [], "warnings": [], "score": 0}
 
+    if not project_dir.resolve().is_relative_to(SUBMITTALS_DIR.resolve()):
+        report["failed"].append(f"Invalid project path: {project}")
+        return report
+
     if not project_dir.exists():
         report["failed"].append("Project directory does not exist")
         return report

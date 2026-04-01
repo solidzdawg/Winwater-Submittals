@@ -36,6 +36,11 @@ def validate_project(project: str) -> dict:
     project_dir = SUBMITTALS_DIR / project
     report = {"ready": True, "errors": [], "warnings": [], "items": []}
 
+    if not project_dir.resolve().is_relative_to(SUBMITTALS_DIR.resolve()):
+        report["errors"].append(f"Invalid project path: {project}")
+        report["ready"] = False
+        return report
+
     if not project_dir.exists():
         report["errors"].append(f"Project directory not found: {project_dir}")
         report["ready"] = False

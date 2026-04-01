@@ -545,6 +545,8 @@ def main():
     args = parser.parse_args()
 
     project_dir = SUBMITTALS_DIR / args.project
+    if not project_dir.resolve().is_relative_to(SUBMITTALS_DIR.resolve()):
+        sys.exit("ERROR: Invalid project path: " + str(args.project))
     if not project_dir.exists():
         sys.exit("ERROR: project folder not found: " + str(project_dir))
 
