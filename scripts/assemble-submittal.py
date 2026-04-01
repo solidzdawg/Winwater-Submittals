@@ -116,17 +116,17 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
             print(f"  ⚠️  No PDFs found in {section_dir.name}/ — section skipped")
             assembly_log.append(f"MISSING: {section_dir.name}/")
             continue
-        bookmark_page = total_pages
-        for pdf_path in pdfs:
+        for i, pdf_path in enumerate(pdfs):
             reader = PdfReader(str(pdf_path))
             page_count = len(reader.pages)
-            for page in reader.pages:
-                writer.add_page(page)
+
+            # Only add the bookmark for the first PDF in the section
+            outline = section_name if i == 0 else None
+            writer.append(reader, outline_item=outline, import_outline=False)
+
             total_pages += page_count
             print(f"  ✅ Added {pdf_path.name} ({page_count} pages)")
             assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
-        # Add top-level bookmark
-        writer.add_outline_item(section_name, bookmark_page)
 
     # --- Per-item sections ---
     items_dir = project_dir / "03-items"
@@ -142,17 +142,20 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
                 print(f"  ⚠️  No PDFs in {item_dir.name}/ — item skipped")
                 assembly_log.append(f"MISSING: 03-items/{item_dir.name}/")
                 continue
-            bookmark_page = total_pages
-            for pdf_path in pdfs:
+            label = item_labels.get(item_dir.name, item_dir.name)
+            for i, pdf_path in enumerate(pdfs):
                 reader = PdfReader(str(pdf_path))
                 page_count = len(reader.pages)
-                for page in reader.pages:
-                    writer.add_page(page)
+
+                # We need to manually add the outline item so it can be a child
+                if i == 0:
+                    bookmark_page = total_pages
+
+                writer.append(reader, import_outline=False)
                 total_pages += page_count
                 print(f"  ✅ Added {item_dir.name}/{pdf_path.name} ({page_count} pages)")
                 assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
-            # Add child bookmark under "Item Sections"
-            label = item_labels.get(item_dir.name, item_dir.name)
+
             writer.add_outline_item(label, bookmark_page, parent=items_parent)
 
     # --- Attachments ---
@@ -162,16 +165,16 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
         print(f"  ⚠️  No PDFs found in 04-attachments/ — attachments skipped")
         assembly_log.append("MISSING: 04-attachments/")
     else:
-        bookmark_page = total_pages
-        for pdf_path in attachment_pdfs:
+        for i, pdf_path in enumerate(attachment_pdfs):
             reader = PdfReader(str(pdf_path))
             page_count = len(reader.pages)
-            for page in reader.pages:
-                writer.add_page(page)
+
+            outline = "Attachments" if i == 0 else None
+            writer.append(reader, outline_item=outline, import_outline=False)
+
             total_pages += page_count
             print(f"  ✅ Added {pdf_path.name} ({page_count} pages)")
             assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
-        writer.add_outline_item("Attachments", bookmark_page)
 
     # --- Write output ---
     if output_name is None:
