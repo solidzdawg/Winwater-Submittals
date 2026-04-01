@@ -217,9 +217,14 @@ def inspect_docx(path):
 # ===================================================================
 
 def set_cell_if_empty(target, value):
+    if type(target).__name__ == 'MergedCell':
+        return
     tv = str(target.value or "").strip()
     if tv == "" or tv.startswith("{") or tv.startswith("<"):
-        target.value = value
+        try:
+            target.value = value
+        except AttributeError:
+            pass # Ignore if it's still somehow read-only
 
 
 def fill_cover(template_path, output_path, set_info, project_info):

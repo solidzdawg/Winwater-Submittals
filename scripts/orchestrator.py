@@ -93,9 +93,18 @@ def step_assemble(project: str, output: str | None = None) -> bool:
     print("  STEP 5: ASSEMBLE PDF")
     print("─" * 60)
     # Import the assembly script
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import importlib.util
+    script_path = Path(__file__).resolve().parent / "assemble-submittal.py"
     try:
-        from assemble_submittal import assemble_submittal, validate_project_structure
+        spec = importlib.util.spec_from_file_location("assemble_submittal", str(script_path))
+        if spec is None or spec.loader is None:
+            raise ImportError("Could not load assemble-submittal.py")
+        assemble_submittal_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(assemble_submittal_module)
+
+        assemble_submittal = assemble_submittal_module.assemble_submittal
+        validate_project_structure = assemble_submittal_module.validate_project_structure
+
         validate_project_structure(project)
         assemble_submittal(project, output)
         return True
