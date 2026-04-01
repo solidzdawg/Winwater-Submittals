@@ -423,13 +423,17 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
 
     # 2. Item index
     page_counts = {}
+    pdf_page_cache = {}
     for inum in items:
         row = manifest.get(inum, {})
         cp = row.get("cut_sheet_path", "").strip()
         if cp:
             p = BASE_DIR / cp
             if p.exists():
-                page_counts[inum] = count_pdf_pages(p)
+                str_p = str(p)
+                if str_p not in pdf_page_cache:
+                    pdf_page_cache[str_p] = count_pdf_pages(p)
+                page_counts[inum] = pdf_page_cache[str_p]
 
     index_tmpl = TEMPLATES_DIR / "Item Index Template.docx"
     if index_tmpl.exists():
