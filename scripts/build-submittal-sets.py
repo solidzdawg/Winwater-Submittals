@@ -390,20 +390,8 @@ def fill_index(template_path, output_path, set_info, item_list, page_counts, pro
 # Build one set
 # ===================================================================
 
-def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_info):
+def _build_cover_page(set_info, work_dir, project_info):
     sid = set_info["id"]
-    name = set_info["name"]
-    items = set_info["items"]
-
-    print("")
-    print(DIVIDER)
-    print("  SET {}: {}".format(sid, name))
-    print("  Items: {}".format(items))
-    print(DIVIDER)
-
-    parts = []  # list of (bookmark_label, pdf_path)
-
-    # 1. Cover page
     cover_tmpl = TEMPLATES_DIR / "submittal cover.xlsx"
     if cover_tmpl.exists():
         cover_out = work_dir / "cover_{}.xlsx".format(sid)
@@ -411,8 +399,8 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
             fill_cover(cover_tmpl, cover_out, set_info, project_info)
             pdf = lo_convert(cover_out, work_dir)
             if pdf:
-                parts.append(("Cover Sheet", pdf))
                 print("  OK: Cover page")
+                return ("Cover Sheet", pdf)
             else:
                 print("  WARN: Cover page LO conversion failed")
         except Exception:
@@ -420,8 +408,10 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
             traceback.print_exc()
     else:
         print("  WARN: Cover template not found: " + str(cover_tmpl))
+    return None
 
-    # 2. Item index
+def _build_item_index(set_info, items, manifest, work_dir, project_info):
+    sid = set_info["id"]
     page_counts = {}
     for inum in items:
         row = manifest.get(inum, {})
@@ -439,8 +429,8 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
             fill_index(index_tmpl, index_out, set_info, item_rows, page_counts, project_info)
             pdf = lo_convert(index_out, work_dir)
             if pdf:
-                parts.append(("Item Index", pdf))
                 print("  OK: Item index")
+                return ("Item Index", pdf)
             else:
                 print("  WARN: Item index LO conversion failed")
         except Exception:
@@ -448,8 +438,11 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
             traceback.print_exc()
     else:
         print("  WARN: Item Index template not found")
+    return None
 
-    # 3. Per-item: separator + cut sheet
+def _build_items(set_info, items, manifest, work_dir):
+    sid = set_info["id"]
+    parts = []
     sep_tmpl = None
     for candidate in ["Seperator Sheet Template.docx", "Separator Sheet Template.docx",
                       "seperator sheet template.docx", "separator sheet.docx",
@@ -506,7 +499,9 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
             else:
                 print("  WARN: Cut sheet NOT FOUND: {}".format(cp))
 
-    # 4. Assemble
+    return parts
+
+def _assemble_pdfs(sid, name, parts, project_dir, output_dir):
     if not parts:
         print("  FAIL: No PDFs to merge for SET {}".format(sid))
         return None
@@ -535,6 +530,36 @@ def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_inf
     mb = out.stat().st_size / 1048576.0
     print("  DONE: {} - {} pages ({:.1f} MB)".format(fname, total, mb))
     return out
+
+def build_set(set_info, manifest, project_dir, output_dir, work_dir, project_info):
+    sid = set_info["id"]
+    name = set_info["name"]
+    items = set_info["items"]
+
+    print("")
+    print(DIVIDER)
+    print("  SET {}: {}".format(sid, name))
+    print("  Items: {}".format(items))
+    print(DIVIDER)
+
+    parts = []  # list of (bookmark_label, pdf_path)
+
+    # 1. Cover page
+    cover_part = _build_cover_page(set_info, work_dir, project_info)
+    if cover_part:
+        parts.append(cover_part)
+
+    # 2. Item index
+    index_part = _build_item_index(set_info, items, manifest, work_dir, project_info)
+    if index_part:
+        parts.append(index_part)
+
+    # 3. Per-item: separator + cut sheet
+    item_parts = _build_items(set_info, items, manifest, work_dir)
+    parts.extend(item_parts)
+
+    # 4. Assemble
+    return _assemble_pdfs(sid, name, parts, project_dir, output_dir)
 
 
 def main():
