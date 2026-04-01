@@ -22,6 +22,7 @@ Requirements:
 
 import argparse
 import csv
+import functools
 import shutil
 import sys
 from collections import OrderedDict
@@ -57,6 +58,7 @@ def group_by_section(manifest: list[dict]) -> OrderedDict:
     return sections
 
 
+@functools.cache
 def count_pdf_pages(pdf_path: Path) -> int:
     try:
         return len(PdfReader(str(pdf_path)).pages)
