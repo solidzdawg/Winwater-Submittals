@@ -68,6 +68,39 @@ def load_manifest(project_dir: Path) -> list[dict]:
         return list(csv.DictReader(f))
 
 
+def get_item_labels(manifest_items: list[dict]) -> dict[str, str]:
+    """Extract item labels from manifest items."""
+    item_labels = {}
+    for row in manifest_items:
+        num = row.get("item_number", "").zfill(2)
+        desc = row.get("description", f"Item {num}")
+        mfr = row.get("manufacturer", "")
+        label = f"Item {num} — {desc}"
+        if mfr:
+            label += f" ({mfr})"
+        item_labels[f"Item-{num}"] = label
+    return item_labels
+
+
+def append_pdfs(writer: PdfWriter, pdfs: list[Path], project_dir: Path, context_name: str | None = None) -> tuple[int, list[str]]:
+    """
+    Append pages from a list of PDFs to the writer.
+    Returns the number of pages added and the assembly log entries.
+    """
+    pages_added = 0
+    log_entries = []
+    for pdf_path in pdfs:
+        reader = PdfReader(str(pdf_path))
+        page_count = len(reader.pages)
+        for page in reader.pages:
+            writer.add_page(page)
+        pages_added += page_count
+        name_to_print = f"{context_name}/{pdf_path.name}" if context_name else pdf_path.name
+        print(f"  ✅ Added {name_to_print} ({page_count} pages)")
+        log_entries.append(f"OK: {pdf_path.relative_to(project_dir)}")
+    return pages_added, log_entries
+
+
 def assemble_submittal(project: str, output_name: str | None = None) -> Path:
     """
     Assemble all PDFs in the correct submittal order into a single output PDF.
@@ -89,15 +122,7 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
 
     # Load manifest for bookmark labels
     manifest_items = load_manifest(project_dir)
-    item_labels = {}
-    for row in manifest_items:
-        num = row.get("item_number", "").zfill(2)
-        desc = row.get("description", f"Item {num}")
-        mfr = row.get("manufacturer", "")
-        label = f"Item {num} — {desc}"
-        if mfr:
-            label += f" ({mfr})"
-        item_labels[f"Item-{num}"] = label
+    item_labels = get_item_labels(manifest_items)
 
     sections = [
         project_dir / "01-cover",
@@ -117,14 +142,9 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
             assembly_log.append(f"MISSING: {section_dir.name}/")
             continue
         bookmark_page = total_pages
-        for pdf_path in pdfs:
-            reader = PdfReader(str(pdf_path))
-            page_count = len(reader.pages)
-            for page in reader.pages:
-                writer.add_page(page)
-            total_pages += page_count
-            print(f"  ✅ Added {pdf_path.name} ({page_count} pages)")
-            assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
+        added, logs = append_pdfs(writer, pdfs, project_dir)
+        total_pages += added
+        assembly_log.extend(logs)
         # Add top-level bookmark
         writer.add_outline_item(section_name, bookmark_page)
 
@@ -143,14 +163,9 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
                 assembly_log.append(f"MISSING: 03-items/{item_dir.name}/")
                 continue
             bookmark_page = total_pages
-            for pdf_path in pdfs:
-                reader = PdfReader(str(pdf_path))
-                page_count = len(reader.pages)
-                for page in reader.pages:
-                    writer.add_page(page)
-                total_pages += page_count
-                print(f"  ✅ Added {item_dir.name}/{pdf_path.name} ({page_count} pages)")
-                assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
+            added, logs = append_pdfs(writer, pdfs, project_dir, context_name=item_dir.name)
+            total_pages += added
+            assembly_log.extend(logs)
             # Add child bookmark under "Item Sections"
             label = item_labels.get(item_dir.name, item_dir.name)
             writer.add_outline_item(label, bookmark_page, parent=items_parent)
@@ -163,14 +178,9 @@ def assemble_submittal(project: str, output_name: str | None = None) -> Path:
         assembly_log.append("MISSING: 04-attachments/")
     else:
         bookmark_page = total_pages
-        for pdf_path in attachment_pdfs:
-            reader = PdfReader(str(pdf_path))
-            page_count = len(reader.pages)
-            for page in reader.pages:
-                writer.add_page(page)
-            total_pages += page_count
-            print(f"  ✅ Added {pdf_path.name} ({page_count} pages)")
-            assembly_log.append(f"OK: {pdf_path.relative_to(project_dir)}")
+        added, logs = append_pdfs(writer, attachment_pdfs, project_dir)
+        total_pages += added
+        assembly_log.extend(logs)
         writer.add_outline_item("Attachments", bookmark_page)
 
     # --- Write output ---
