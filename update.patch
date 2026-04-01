@@ -1,0 +1,13 @@
+--- scripts/build-submittal-sets.py
++++ scripts/build-submittal-sets.py
+@@ -147,8 +147,8 @@
+         LO_BIN, "--headless", "--norestore", "--nolockcheck",
+         "-env:UserInstallation=file://" + profile_dir,
+         "--convert-to", "pdf",
+-        "--outdir", str(output_dir),
+-        str(input_path),
++        "--outdir", str(output_dir.resolve()),
++        str(input_path.resolve()),
+     ]
+     print("  LO cmd: " + " ".join(cmd))
+     try:

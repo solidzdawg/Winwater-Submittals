@@ -146,8 +146,8 @@ def lo_convert(input_path, output_dir):
         LO_BIN, "--headless", "--norestore", "--nolockcheck",
         "-env:UserInstallation=file://" + profile_dir,
         "--convert-to", "pdf",
-        "--outdir", str(output_dir.resolve()),
-        str(input_path.resolve()),
+        "--outdir", str(output_dir),
+        str(input_path),
     ]
     print("  LO cmd: " + " ".join(cmd))
     try:
