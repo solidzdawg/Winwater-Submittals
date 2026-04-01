@@ -35,8 +35,16 @@ def qc_check(project: str) -> dict:
         passed (list[str]), failed (list[str]), warnings (list[str]),
         score (int out of 100)
     """
-    project_dir = SUBMITTALS_DIR / project
     report = {"passed": [], "failed": [], "warnings": [], "score": 0}
+
+    try:
+        project_dir = (SUBMITTALS_DIR / project).resolve()
+        if not project_dir.is_relative_to(SUBMITTALS_DIR.resolve()):
+            report["failed"].append("Invalid project name: path traversal detected")
+            return report
+    except Exception:
+        report["failed"].append("Invalid project name")
+        return report
 
     if not project_dir.exists():
         report["failed"].append("Project directory does not exist")
