@@ -1,4 +1,0 @@
-version: 1
-display_name: Submittal Output Hardener
-short_description: Enforce template-compliant, professional Winwater submittal output.
-default_prompt: Improve submittal output quality, enforce required template usage, and run template + QC gates before build.

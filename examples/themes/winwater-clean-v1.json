@@ -1,9 +1,0 @@
-{
-  "name": "winwater-clean-v1",
-  "page_size": "LETTER",
-  "margin_in": {"top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5},
-  "fonts": {"title": "DejaVu Sans", "body": "DejaVu Sans", "mono": "DejaVu Sans Mono"},
-  "font_sizes_pt": {"title": 18, "h1": 14, "h2": 12, "body": 10.5, "caption": 9},
-  "colors": {"text": "#111111", "muted": "#666666", "accent": "#1F6FEB", "border": "#222222", "highlight": "#FFF176"},
-  "spacing_pt": {"xxs": 2, "xs": 4, "sm": 6, "md": 10, "lg": 16, "xl": 24}
-}

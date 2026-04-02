@@ -1,4 +1,0 @@
-version: 1
-display_name: Submittal Quality Skill
-short_description: Generate professional, template-free submittals with backend plugins and strict quality gates.
-default_prompt: Build a template-independent submittal rendering plan, choose backend, enforce schema/theme validation, and run objective quality checks.
