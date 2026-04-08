@@ -1,0 +1,18 @@
+{
+  "project_code": "Double-RR",
+  "project_name": "Double RR Ranch - East Cabins",
+  "documents": [
+    {
+      "path": "20260309 - DRLR Construction Docs - 252128.ENV.pdf",
+      "kind": "drawings"
+    },
+    {
+      "path": "Div 15 - Mechanical Specs - 20230319.pdf",
+      "kind": "specifications"
+    },
+    {
+      "path": "Div 16 - Electrical Specs - 20260311.pdf",
+      "kind": "specifications"
+    }
+  ]
+}
