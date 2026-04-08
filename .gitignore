@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build outputs
+_output/
+artifacts/
+page-images/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
