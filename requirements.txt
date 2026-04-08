@@ -1,0 +1,4 @@
+jsonschema>=4.22
+openai>=1.72.0
+pymupdf>=1.26.0
+requests>=2.32.0
