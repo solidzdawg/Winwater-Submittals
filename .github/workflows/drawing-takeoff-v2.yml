@@ -1,0 +1,54 @@
+name: Extract Drawing Takeoff V2
+
+on:
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: Path to the sources JSON file
+        required: true
+        default: projects/Double-RR/sources.example.json
+      model:
+        description: OpenAI model to use for multimodal extraction
+        required: false
+        default: gpt-5
+      inventory_only:
+        description: Skip model extraction and only produce inventory/note outputs
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run enhanced drawing takeoff pipeline
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          args=(--sources "${{ inputs.sources }}" --output-dir "_output/drawing-takeoff-v2")
+          if [ "${{ inputs.inventory_only }}" = "true" ]; then
+            args+=(--inventory-only)
+          else
+            args+=(--model "${{ inputs.model }}")
+          fi
+          python scripts/extract_drawing_takeoff_v2.py "${args[@]}"
+
+      - name: Upload enhanced extraction artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: drawing-takeoff-v2-output
+          path: _output/drawing-takeoff-v2
